@@ -47,12 +47,14 @@ if __name__ == "__main__":
     import init
 
     logger = logging.getLogger(__name__)
+    logger_pil = logging.getLogger('PIL')
+    logger_plt = logging.getLogger('matplotlib')
+    logger_pil.setLevel(logging.ERROR)
+    logger_plt.setLevel(logging.ERROR)
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--inputfile", help="input yaml file", required=True)
     args = parser.parse_args()
-
-    plt.set_loglevel("error")
 
     if args.inputfile:
         try:

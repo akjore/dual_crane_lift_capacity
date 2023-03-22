@@ -226,23 +226,42 @@ def _add_annotations(ax, weight, cog_limit_at_given_weight, cog, lift_capacity_a
         if dist[i] > 0.:
             _annotate_point_pair(ax, f"{dist[i]:~0.3f}", (peak[i], y2), (peak[i+1], y2))
 
+    y_peak = np.max(lift_capacity_curve['y'])
+    arrowprops_dimline = {'arrowstyle': '-', 'color': 'lightgrey'}
+    _annotate_point_pair(ax, None, (x_peak[0], y2), (x_peak[0], y_peak), arrowprops=arrowprops_dimline)
+    _annotate_point_pair(ax, None, (x_cog, y2), (x_cog, weight), arrowprops=arrowprops_dimline)
+    _annotate_point_pair(ax, None, (x_peak[1], y2), (x_peak[1], y_peak), arrowprops=arrowprops_dimline)
+
     # weight margins
     idx = np.argmin(lift_capacity_at_cog)
     x_min_weight_margin = cog[idx]
     y_min_weight_margin = lift_capacity_at_cog[idx]
-    xlimit = plt.xlim()
-    offset = (xlimit[1] - xlimit[0]) / 10
     color = 'green' if cog.size == 1 else 'red'
+    x_min = min(lift_capacity_curve['x'])
+    x_max = max(lift_capacity_curve['x'])
 
-    x = [(xlimit[0] + offset) * ax.xaxis.units, (xlimit[1] - offset) * ax.xaxis.units]
+    x = [x_min, x_max]
+    xcg = [min(cog), max(cog)]
     if x_min_weight_margin > x_peak[0]:
         x.reverse()
+        xcg.reverse()
     _annotate_point_pair(ax, f"{y_min_weight_margin-weight:~0.0f}", (x[0], weight), (x[0], y_min_weight_margin), ha='left', va='center', color=color)
+    _annotate_point_pair(ax, None, (x[0], weight), (xcg[0], weight), arrowprops=arrowprops_dimline)
+
+    # this is ok for normal curves, but needs fixing for float
+    if x_peak[0] == x_peak[1]:
+        _annotate_point_pair(ax, None, (x[0], y_min_weight_margin), (xcg[0], y_min_weight_margin), arrowprops=arrowprops_dimline)
+    else:
+        _annotate_point_pair(ax, None, (x[0], y_min_weight_margin), (x_peak[1], y_min_weight_margin), arrowprops=arrowprops_dimline)
+
     if cog.size == 3:
         _annotate_point_pair(ax, f"{lift_capacity_at_cog[1]-weight:~0.0f}", (x[1], weight), (x[1], lift_capacity_at_cog[1]), ha='left', va='center', color='green')
+        _annotate_point_pair(ax, None, (x[1], weight), (xcg[1], weight), arrowprops=arrowprops_dimline)
+        _annotate_point_pair(ax, None, (x[1], lift_capacity_at_cog[1]), (x_cog, lift_capacity_at_cog[1]), arrowprops=arrowprops_dimline)
 
-    # float
-    #   get the peak of the crane capacity curve, or edges if float
+    _annotate_point_pair(ax, None, (x_cog, y1), (x_cog, weight), arrowprops=arrowprops_dimline)
+    _annotate_point_pair(ax, None, (x1, y1), (x1, weight), arrowprops=arrowprops_dimline)
+    _annotate_point_pair(ax, None, (x2, y1), (x2, weight), arrowprops=arrowprops_dimline)
 
 
 def _annotate_point_pair(ax, text, xy_start, xy_end, xycoords='data', arrowprops=None, ha='center', va='bottom', color='black'):
