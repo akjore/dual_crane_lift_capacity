@@ -4,7 +4,41 @@ import numpy as np
 from init import ureg, Q
 
 
-def create_plot(
+def create_plots(crane_capacity_a, crane_capacity_b, **kwargs):
+    # Create plots
+    figures = []
+    for i in range(0, len(kwargs['cases'])):
+        pass
+        x = kwargs['lift_capacity_curve']['x'][i]
+        y = kwargs['lift_capacity_curve']['y'][i]
+        figures.append(
+            _create_plot(
+                kwargs['cases'][i],
+                kwargs['weight_original_unit'][i],
+                kwargs['cog_original_unit'][i],
+                kwargs['lift_point_a'][i],
+                kwargs['lift_point_b'][i],
+                kwargs['crane_radius_a'][i],
+                kwargs['crane_radius_b'][i],
+                kwargs['rigging_weight_a'][i],
+                kwargs['rigging_weight_b'][i],
+                kwargs['crane_curve_a'][i],
+                kwargs['crane_curve_b'][i],
+                crane_capacity_a[i],
+                crane_capacity_b[i],
+                kwargs['tilt_factor'][i],
+                kwargs['cog_uncertainty_factor'][i],
+                kwargs['weight_uncertainty_factor'][i],
+                {'x': x, 'y': y},
+                kwargs['lift_capacity_at_cog'][i],
+                kwargs['cog_limit_at_given_weight'][i],
+                kwargs['true_hook_load_a'][i],
+                kwargs['true_hook_load_b'][i],
+                kwargs['factored_hook_load_a'][i],
+                kwargs['factored_hook_load_b'][i]))
+
+
+def _create_plot(
         case, weight, cog, lift_point_a, lift_point_b, crane_radius_a, crane_radius_b,
         rigging_weight_a, rigging_weight_b, crane_a, crane_b, crane_capacity_a, crane_capacity_b,
         tilt_factor, cog_uncertainty_factor, weight_uncertainty_factor,

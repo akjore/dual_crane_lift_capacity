@@ -32,3 +32,6 @@ def setup_logging(config_file_path='logging.config.yaml', logging_level=logging.
         logging.config.dictConfig(config)
     else:
         logging.basicConfig(level=logging_level)
+
+
+setup_logging()

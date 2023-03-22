@@ -21,7 +21,9 @@ class DualLiftingCases:
     crane_curve_a: list = None
     crane_curve_b: list = None
     weight: np.array = None
+    weight_original_unit: list = None
     cog: np.array = None
+    cog_original_unit:  list = None
     cases: list = None
 
     filename: str = None
@@ -54,7 +56,8 @@ class DualLiftingCases:
         self.tilt_factor = np.array([d['tilt_factor'] for d in self._content.values()])
         self.crane_curve_a = [d['crane_curve_a'] for d in self._content.values()]
         self.crane_curve_b = [d['crane_curve_b'] for d in self._content.values()]
-        self.weight = Q.from_list([Q(d['weight']) for d in self._content.values()])
+        self.weight_original_unit = [Q(d['weight']) for d in self._content.values()]
+        self.weight = Q.from_list(self.weight_original_unit)
         self.cases = list(self._content)
 
         tmp1 = [d['lift_point_a'] if isinstance(d['lift_point_a'], list) else [d['lift_point_a']] for d in self._content.values()]
@@ -68,6 +71,8 @@ class DualLiftingCases:
         tmp1 = [d['cog'] if isinstance(d['cog'], list) else [d['cog']] for d in self._content.values()]
         tmp2 = [[Q(s) for s in d] for d in tmp1]
         self.cog = self.__to_array([np.sort(Q.from_list(d+[np.NaN*d[0].units]*(3-len(d)))) for d in tmp2])
+
+        self.cog_original_unit = [Q.from_list([Q(s) for s in d]) for d in tmp1]
 
         # Print data variables for debug purposes
         self._logger.debug(f'Loaded content: {self._content}')
