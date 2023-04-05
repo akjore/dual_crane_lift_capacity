@@ -1,0 +1,13 @@
+__pycache__
+.pytest_cache
+.env
+
+lib/__pycache__
+
+tests/__pycache__
+
+web/__pycache__
+web/tmp/*
+web/.pytest_cache
+web/.env
+web/.flaskenv
