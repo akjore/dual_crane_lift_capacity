@@ -3,13 +3,16 @@ import logging
 import logging.config
 import os
 import tempfile
+import time
 import zipfile
 from io import BytesIO
 
 import git
 import pytest
 import yaml
-from flask import Flask, jsonify, render_template, request, send_from_directory
+from apscheduler.schedulers.background import BackgroundScheduler
+from flask import (Flask, Response, jsonify, render_template, request,
+                   send_from_directory)
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 import dualCraneLiftCapacity.dual_crane_lift
@@ -25,6 +28,9 @@ app.jinja_env.globals['TEST_RETCODE'] = None
 
 app.config['UPLOAD_EXTENSIONS'] = ".yaml, .yml"
 app.config['TMP_DIRECTORY'] = "tmp"
+app.config['SAMPLE_DIRECTORY'] = "../sample"
+app.config['TESTS_DIRECTORY'] = "../tests"
+app.config['MAX_TMP_FILE_AGE'] = 12     # hours
 
 
 def setup_logging(config_file_path='../logging.config.yaml', logging_level=logging.INFO, env_key='LOG_CFG'):
@@ -65,14 +71,36 @@ def get_test_status():
     '''
     Runs pytest. The return code and the location of the the test report are stored in jinja_env.globals
     '''
-    filename = os.path.join(app.root_path, "tmp", PYTEST_OUTPUT_FILE)
+    filename = os.path.join(app.root_path, app.config['TESTS_DIRECTORY'], PYTEST_OUTPUT_FILE)
     app.jinja_env.globals['TEST_RESULT_FILENAME'] = PYTEST_OUTPUT_FILE
     app.jinja_env.globals['TEST_RETCODE'] = pytest.main(["../tests", "--self-contained-html", f"--html={filename}"])
     app.logger.debug(f"Pytest result file: {app.jinja_env.globals['TEST_RESULT_FILENAME']}")
     app.logger.debug(f"Pytest return code: {app.jinja_env.globals['TEST_RETCODE']}")
 
 
-# methods for dual crane lift
+@app.before_first_request
+def get_supported_crane_curves():
+    '''
+    Gets a list of the supported crane curves and stores in jinja_env.globals
+    '''
+    supported_crane_curves = dualCraneLiftCapacity.dual_crane_lift.crane_curve_ids()
+    app.jinja_env.globals['SUPPORTED_CRANE_CURVE_IDS'] = supported_crane_curves
+    app.logger.debug(f"Supported crane curves: {app.jinja_env.globals['SUPPORTED_CRANE_CURVE_IDS']}")
+
+
+def clear_tmp_files():
+    '''
+    Goes through the files in path 'path', and deletes any older than 'max_age' hours
+    '''
+    path = app.config['TMP_DIRECTORY']
+    max_age = app.config['MAX_TMP_FILE_AGE']
+    now = time.time()
+    for filename in os.listdir(path):
+        if os.path.getmtime(os.path.join(path, filename)) < now - max_age * 60 * 60:
+            if os.path.isfile(os.path.join(path, filename)):
+                os.remove(os.path.join(path, filename))
+
+
 def make_png(figure):
     '''
     Takes a pyplot figure and writes it to a png in memory.
@@ -101,6 +129,9 @@ def prepare_dual_crane_lift_plots(filecontent):
 
     Returns:
         a filename, either a png or zip
+
+    Raises:
+        Exception: some error while processing the provided filecontent
     '''
     try:
         figures = dualCraneLiftCapacity.dual_crane_lift.main(data=filecontent, interactive=False)
@@ -123,7 +154,7 @@ def prepare_dual_crane_lift_plots(filecontent):
         return os.path.basename(file.name)
     except Exception as e:
         app.logger.error(repr(e))
-        return None
+        raise e
 
 
 @app.route("/", methods=['GET', 'POST'])
@@ -154,16 +185,18 @@ def dual_crane_lift():
         file_ext = os.path.splitext(file.filename)[1]
         if file_ext not in app.config['UPLOAD_EXTENSIONS']:
             app.logger.error(f"File does not have a valid extension: {file_ext}")
-            return "Invalid file type", 400
-
-        # check filename is a valid input file
-        # TODO
+            return "Invali  d file type", 400
 
         # all well - create plots and return to use
         app.logger.debug(f"Input file provided: {file.filename}")
-        retfile = prepare_dual_crane_lift_plots(filecontent=file.read())
-        if not retfile:
-            return "Error processing input file", 400
+        try:
+            retfile = prepare_dual_crane_lift_plots(filecontent=file.read())
+        except KeyError as ex:
+            return f'Missing key {ex}', 400
+        except ValueError as ex:
+            return str(ex), 400
+        except Exception as ex:
+            return repr(ex), 400
         app.logger.debug(f"Result file created: {retfile}")
 
         results = {'datetime': datetime.datetime.now().replace(microsecond=0).isoformat(sep=" "),
@@ -175,37 +208,40 @@ def dual_crane_lift():
     return render_template('main.html')
 
 
-@app.route("/scratchDir/<path:name>")
-def get_file(name):
-    return send_from_directory(directory=app.config['TMP_DIRECTORY'], path=name)
+@app.route("/get_file/<path:name>", defaults={'folder': None})
+@app.route("/get_file/<path:folder>/<path:name>")
+def get_file(folder, name):
+    if not folder:
+        return send_from_directory(directory=app.config['TMP_DIRECTORY'], path=name)
+    elif folder == "sample":
+        return send_from_directory(directory=app.config['SAMPLE_DIRECTORY'], path=name)
+    elif folder == "tests":
+        return send_from_directory(directory=app.config['TESTS_DIRECTORY'], path=name)
 
 
-@app.route("/test")
-def test():
-    import main
-
-    data = """M10 fixed:
-    crane_curve_a: S7000.main.fixed_1.5
-    crane_curve_b: S7000.main.fixed_1.5
-    crane_radius_a: 50.0 m
-    crane_radius_b: 50.0 m
-    rigging_weight_a: 495 t
-    rigging_weight_b: 380 t
-    weight_uncertainty_factor: 1.03
-    cog_uncertainty_factor: 1.02
-    tilt_factor: 1.02
-    lift_point_a:
-     - (43.73+3.03) m
-     - (43.73-3.03) m
-    lift_point_b: [82. m]
-    weight: 10295 t
-    cog: 61.668 m"""
-
-    figure_json = main.main(data=data, interactive=False)
+@app.route("/delete_file/<path:name>", methods=['DELETE'])
+def delete_file(name):
+    os.remove(os.path.join(app.config['TMP_DIRECTORY'], name))
+    return jsonify({'resultfile': name})
 
 
-#    figjson = json.dumps(mpld3.fig_to_dict(fig))
-    return render_template('test.html', figjson=figure_json)
+@app.route('/logger')
+def logger():
+    return render_template('logger.html')
+
+
+@app.route('/stream')
+def stream():
+    def generate():
+        with io.StringIO() as f:
+#        with open('job.log') as f:
+            while True:
+                s = f.read()
+                if s:
+                    yield f"data:{s}\n\n"
+                time.sleep(1)
+
+    return Response(generate(), mimetype='text/event-stream')
 
 
 setup_logging()
@@ -215,6 +251,11 @@ logger_pil = logging.getLogger('PIL')
 logger_plt = logging.getLogger('matplotlib')
 logger_pil.setLevel(logging.ERROR)
 logger_plt.setLevel(logging.ERROR)
+
+# set scheduler for deleting old files
+sched = BackgroundScheduler(daemon=True)
+sched.add_job(clear_tmp_files, 'interval', minutes=60)
+sched.start()
 
 if __name__ == "__main__":
     app.run()

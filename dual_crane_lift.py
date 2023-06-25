@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import dualCraneLiftCapacity.lib.crane_curves
 import dualCraneLiftCapacity.lib.dual_crane_lift_capacity
 import dualCraneLiftCapacity.lib.dual_crane_lift_capacity_plot
+import dualCraneLiftCapacity.lib.init
 import dualCraneLiftCapacity.lib.input_file_wrapper
 
 
@@ -45,14 +46,11 @@ def main(filename='', data='', interactive=True):
     if interactive:
         plt.show()
     else:
-        # plt.close('all')
-
-        # print('so far so good')
-
         return figures
-        # import mpld3
-        # import json
-        # return json.dumps(mpld3.fig_to_dict(figures[0]))
+
+
+def crane_curve_ids():
+    return dualCraneLiftCapacity.lib.crane_curves.crane_curve_ids()
 
 
 if __name__ == "__main__":

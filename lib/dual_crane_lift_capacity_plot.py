@@ -1,10 +1,15 @@
+import logging
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 from dualCraneLiftCapacity.lib.init import Q, ureg
 
+logger = logging.getLogger(__name__)
+
 
 def create_plots(crane_capacity_a, crane_capacity_b, **kwargs):
+    logger.debug("Start preparing plots")
     # Create plots
     figures = {}
     for i in range(0, len(kwargs['cases'])):
@@ -126,6 +131,7 @@ def _add_lift_capacity_curve(ax, curve):
 
     h_align = np.repeat('right', curve['x'].size / 2)
     h_align = np.append(h_align, np.repeat('left', curve['x'].size / 2))
+
     for (x, y, h) in zip(curve['x'], curve['y'], h_align):
         ax.annotate('  %d  ' % y.to(ax.yaxis.units).magnitude, (x, y), textcoords='data', verticalalignment='center', horizontalalignment=h)
 
@@ -147,7 +153,7 @@ def _add_cog(weight, cog):
 def _add_info_tables(weight, cog, lift_point_a, lift_point_b, crane_radius_a, crane_radius_b, rigging_weight_a, rigging_weight_b,
                      crane_a, crane_b, crane_capacity_a, crane_capacity_b, true_hook_load_a, true_hook_load_b,
                      factored_hook_load_a, factored_hook_load_b, tilt_factor, cog_uncertainty_factor, weight_uncertainty_factor):
-    # display crane_a & B such that crane with lowest liftpoint is to the left
+    # display crane_a & b such that crane with lowest liftpoint is to the left
     crane_a_idx_offset = 0
     if min(lift_point_a) > min(lift_point_b):
         crane_a_idx_offset = 2
@@ -176,7 +182,7 @@ def _add_info_tables(weight, cog, lift_point_a, lift_point_b, crane_radius_a, cr
 
     # Add data table crane B
     _add_data_table("Crane B", _crane_table(crane_b, crane_radius_b, crane_capacity_b, rigging_weight_b, lift_point_b, true_hook_load_b,
-                    factored_hook_load_b), 2 + crane_a_idx_offset)
+                    factored_hook_load_b), 2 - crane_a_idx_offset)
 
 
 def _crane_table(crane, crane_radius, crane_capacity, rigging_weight, lift_point, true_hook_load, factored_hook_load):
@@ -258,10 +264,6 @@ def _add_annotations(ax, weight, cog_limit_at_given_weight, cog, lift_capacity_a
         _annotate_point_pair(ax, None, (x[1], weight), (xcg[1], weight), arrowprops=arrowprops_dimline)
         _annotate_point_pair(ax, None, (x[1], lift_capacity_at_cog[1]), (x_cog, lift_capacity_at_cog[1]), arrowprops=arrowprops_dimline)
 
-    _annotate_point_pair(ax, None, (x_cog, y1), (x_cog, weight), arrowprops=arrowprops_dimline)
-    _annotate_point_pair(ax, None, (x1, y1), (x1, weight), arrowprops=arrowprops_dimline)
-    _annotate_point_pair(ax, None, (x2, y1), (x2, weight), arrowprops=arrowprops_dimline)
-
 
 def _annotate_point_pair(ax, text, xy_start, xy_end, xycoords='data', arrowprops=None, ha='center', va='bottom', color='black'):
     if arrowprops is None:
@@ -270,8 +272,8 @@ def _annotate_point_pair(ax, text, xy_start, xy_end, xycoords='data', arrowprops
     if ha != 'center':
         offset.reverse()
 
-    xy_text = ((xy_start[0] + xy_end[0])/2., (xy_start[1] + xy_end[1])/2.)
+    if not (np.isnan(xy_start[0]) or np.isnan(xy_start[1]) or np.isnan(xy_end[0]) or np.isnan(xy_end[1])):
+        xy_text = ((xy_start[0] + xy_end[0])/2., (xy_start[1] + xy_end[1])/2.)
 
-    ax.annotate('', xy=xy_end, xycoords=xycoords, xytext=xy_start, textcoords=xycoords, arrowprops=arrowprops)
-    label = ax.annotate(text=text, xy=xy_text,	xycoords=xycoords, xytext=offset, textcoords='offset points', ha=ha, va=va, fontsize=7)
-    return label
+        ax.annotate('', xy=xy_end, xycoords=xycoords, xytext=xy_start, textcoords=xycoords, arrowprops=arrowprops)
+        ax.annotate(text=text, xy=xy_text,	xycoords=xycoords, xytext=offset, textcoords='offset points', ha=ha, va=va, fontsize=7)

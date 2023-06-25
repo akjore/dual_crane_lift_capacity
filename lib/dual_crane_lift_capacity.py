@@ -105,7 +105,9 @@ def __hook_loads(weight, lift_point_a, lift_point_b, cog, rigging_weight_a, rigg
 
 def __create_x(cog_lim, cog, cg_max_lift_capacity):
     '''
-    Create a sensible x-axis to use as basis for the crane capacity curve. Use the provided input to ensure curve covers the area of interest.
+    Create a sensible x-axis to use as basis for the crane capacity curve.
+    * The peak should be in the middle
+    * cg, and therefore x, needs to remain between the two lifting points
 
     Args:
         cog_lim:                    limiting CoG positions at module weight (mass) that are still liftable
@@ -117,14 +119,15 @@ def __create_x(cog_lim, cog, cg_max_lift_capacity):
     '''
     xmin_1 = np.nanmin(cog_lim, axis=1)
     xmin_2 = np.nanmin(cog, axis=1)
-    xmin = np.minimum(xmin_1, xmin_2)
+    dxmin = np.nanmin(cg_max_lift_capacity, axis=1) - np.fmin(xmin_1.magnitude, xmin_2.magnitude) * xmin_1.units
 
     xmax_1 = np.nanmax(cog_lim, axis=1)
     xmax_2 = np.nanmax(cog, axis=1)
-    xmax = np.maximum(xmax_1, xmax_2)
+    dxmax = np.fmax(xmax_1.magnitude, xmax_2.magnitude) * xmax_1.units - np.nanmax(cg_max_lift_capacity, axis=1)
 
-    xmin = xmin - 0.5 * ureg.meter			# add some air before and after curve
-    xmax = xmax + 0.5 * ureg.meter
+    dx = np.fmax(dxmin.magnitude, dxmax.magnitude) * dxmin.units + 0.5 * ureg.meter
+    xmin = np.nanmin(cg_max_lift_capacity, axis=1) - dx
+    xmax = np.nanmax(cg_max_lift_capacity, axis=1) + dx
 
     x_1 = np.array([np.linspace(i, j, 7) for i, j in zip(xmin.magnitude, np.nanmin(cg_max_lift_capacity, axis=1).magnitude)]) * xmin.units
     x_2 = np.array([np.linspace(i, j, 7) for i, j in zip(np.nanmax(cg_max_lift_capacity, axis=1).magnitude, xmax.magnitude)]) * xmin.units
@@ -176,7 +179,6 @@ def __lift_capacity(x, cg_max_lift_capacity, crane_capacity_a, crane_capacity_b,
     m[np.ma.getmask(m) & ~np.isnan(x)] = max_crane_cap[np.ma.getmask(m) & ~np.isnan(x)]
     m[np.isnan(x)] = np.nan
     logger.debug(f'Lift capacity, m: {m}')
-
     return m
 
 
@@ -184,6 +186,7 @@ def __cog_limits(lift_factors, weight, crane_capacity_a, crane_capacity_b, riggi
     '''
     Given the module weight and lift factors, determine the extreme possible module CoGs.
     This means shifting the CoG until each of the cranes reaches capacity.
+    Check CoG remains between lifting points
 
     Args:
         lift_factors:               combined lift factors
@@ -214,5 +217,15 @@ def __cog_limits(lift_factors, weight, crane_capacity_a, crane_capacity_b, riggi
         f_b_max = f_b_max_a
     x[:, 0] = ((f_b_min - rigging_weight_b) / weight / lift_factors) * (np.nanmin(lift_point_b, axis=1)-np.nanmin(lift_point_a, axis=1)) + np.nanmin(lift_point_a, axis=1)
     x[:, 1] = ((f_b_max - rigging_weight_b) / weight / lift_factors) * (np.nanmax(lift_point_b, axis=1)-np.nanmax(lift_point_a, axis=1)) + np.nanmax(lift_point_a, axis=1)
-    logger.debug(f'x: {x}')
+
+    # Overwrite non-physical solutions (CoGs outside lifting points)
+    logger.debug(f'Intermediate calculation of intercepts: {x}')
+    if np.all(lift_point_a.min(1) < lift_point_b.min(1)):			                                # crane A has lower coordinates vs crane B
+        non_physical = (x < lift_point_a).any() or (x > lift_point_b).any()
+    else:
+        non_physical = (x > lift_point_a).any() or (x < lift_point_b).any()
+    x[non_physical] = np.nan
+
+    logger.debug(f'Calculation of intercepts after removing non-physical solutions: {x}')
+
     return x

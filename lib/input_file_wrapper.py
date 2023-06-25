@@ -29,6 +29,11 @@ class DualLiftingCases:
     filename: str = None
     data: str = None
 
+    def __check_dim(self, varstr, dim):
+        var = getattr(locals()['self'], varstr)
+        if not var.check(dim):
+            raise ValueError(f'{varstr} has dimension [{var.dimensionality}] - {dim} expected')
+
     def __load_data(self):
         # Load data, either from file or data provided
         if self.data:
@@ -51,9 +56,9 @@ class DualLiftingCases:
         self.crane_radius_b = Q.from_list([Q(d['crane_radius_b']) for d in self._content.values()])
         self.rigging_weight_a = Q.from_list([Q(d['rigging_weight_a']) for d in self._content.values()])
         self.rigging_weight_b = Q.from_list([Q(d['rigging_weight_b']) for d in self._content.values()])
-        self.weight_uncertainty_factor = np.array([d['weight_uncertainty_factor'] for d in self._content.values()])
-        self.cog_uncertainty_factor = np.array([d['cog_uncertainty_factor'] for d in self._content.values()])
-        self.tilt_factor = np.array([d['tilt_factor'] for d in self._content.values()])
+        self.weight_uncertainty_factor = Q.from_list([Q(d['weight_uncertainty_factor']) for d in self._content.values()])
+        self.cog_uncertainty_factor = Q.from_list([Q(d['cog_uncertainty_factor']) for d in self._content.values()])
+        self.tilt_factor = Q.from_list([Q(d['tilt_factor']) for d in self._content.values()])
         self.crane_curve_a = [d['crane_curve_a'] for d in self._content.values()]
         self.crane_curve_b = [d['crane_curve_b'] for d in self._content.values()]
         self.weight_original_unit = [Q(d['weight']) for d in self._content.values()]
@@ -70,7 +75,7 @@ class DualLiftingCases:
 
         tmp1 = [d['cog'] if isinstance(d['cog'], list) else [d['cog']] for d in self._content.values()]
         tmp2 = [[Q(s) for s in d] for d in tmp1]
-        self.cog = self.__to_array([np.sort(Q.from_list(d+[np.NaN*d[0].units]*(3-len(d)))) for d in tmp2])
+        self.cog = self.__to_array([Q.from_list(d+[np.NaN*d[0].units]*(3-len(d))) for d in tmp2])
 
         self.cog_original_unit = [Q.from_list([Q(s) for s in d]) for d in tmp1]
 
@@ -90,6 +95,19 @@ class DualLiftingCases:
         self._logger.debug(f'lift_point_a: {self.lift_point_a}')
         self._logger.debug(f'lift_point_b: {self.lift_point_b}')
         self._logger.debug(f'cog: {self.cog}')
+
+        # Check all params have the required dimensionality
+        self.__check_dim('crane_radius_a', '[length]')
+        self.__check_dim('crane_radius_b', '[length]')
+        self.__check_dim('rigging_weight_a', '[mass]')
+        self.__check_dim('rigging_weight_b', '[mass]')
+        self.__check_dim('weight_uncertainty_factor', '[]')
+        self.__check_dim('cog_uncertainty_factor', '[]')
+        self.__check_dim('tilt_factor', '[]')
+        self.__check_dim('lift_point_a', '[length]')
+        self.__check_dim('lift_point_b', '[length]')
+        self.__check_dim('weight', '[mass]')
+        self.__check_dim('cog', '[length]')
 
     def __to_array(self, arr):
         unit = arr[0].units

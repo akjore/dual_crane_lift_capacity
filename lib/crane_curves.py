@@ -15,8 +15,6 @@ def _load_crane_curves():
     alt_file = os.path.join(os.path.dirname(__file__), 'crane_curves.yaml')
     crane_curve_file = os.getenv('CRANE_CURVE_FILENAME', alt_file)
 
-    print(crane_curve_file)
-
     if os.path.exists(crane_curve_file):
         logger.debug(f'Loading crane curves from {crane_curve_file}')
         with open(crane_curve_file) as stream:
@@ -68,6 +66,8 @@ def _crane_capacity(curve, radius):
     # given a radius, returns the capacity
     try:
         return np.interp(radius, _crane_radii[curve], _crane_capacities[curve], left=np.nan, right=np.nan)
+    except KeyError as e:
+        raise KeyError(f'Crane curve {curve}') from e
     except Exception as e:
         raise e
 
