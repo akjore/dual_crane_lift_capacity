@@ -1,0 +1,65 @@
+html {
+	max-width: 1200px;
+    position: relative;
+    min-height: 100%;
+	margin: 0 auto;
+	font-family: "Quicksand", sans-serif;
+	font-weight: 500;
+}
+
+body {
+    margin: 0 0 100px;
+    /* bottom = footer height */
+    padding: 25px;
+}
+
+footer {
+	text-align: left;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 75px;
+    max-width: 100%;
+	min-width: 100%;
+    overflow: hidden;
+	color: #cccccc;
+}
+
+h4.left { 
+	float: left; 
+}
+
+h4.right_fail { 
+	float: right;
+	color: red;
+}
+
+h4.right_pass { 
+	float: right;
+	color: green;
+}
+
+h4.right_unknown { 
+	float: right;
+}
+
+.resulttable {
+  width: 75%;
+  padding: 25px;
+  font-family: "Quicksand", sans-serif;
+  font-size: 20px;
+}
+
+.dropzone {
+  font-family: "Quicksand", sans-serif;
+  font-weight: 500;
+  font-size: 20px;
+  cursor: pointer;
+  color: #cccccc;
+  border: 4px dashed #FF1344;
+  border-radius: 10px;
+}
+
+.git {
+	color: #cccccc;
+}

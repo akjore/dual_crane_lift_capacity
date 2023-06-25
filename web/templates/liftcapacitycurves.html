@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %} Dual crane lift capacity {% endblock %}
+{% block head %}
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+	<style>
+		.mySlides {display:none}
+		.w3-left, .w3-right, .w3-badge {cursor:pointer}
+		.w3-badge {height:13px;width:13px;padding:0}
+	</style>
+{{ super() }}
+{% endblock %}
+{% block mainbody %}   
+
+
+
+	{% if figures %}
+		<div class="w3-content w3-display-container">
+			{% for figure in figures %}
+				<img class="mySlides" src="{{ figure }}" alt="{{ figure }}" style="width:100%">
+			{% endfor %}
+						
+			<div class="w3-center w3-container w3-section w3-large w3-text-black w3-display-bottommiddle" style="width:100%">
+				<div class="w3-left w3-hover-text-khaki" onclick="plusDivs(-1)">&#10094;</div>
+				<div class="w3-right w3-hover-text-khaki" onclick="plusDivs(1)">&#10095;</div>
+
+				{% for figure in figures %}
+					<span class="w3-badge demo w3-border w3-transparent w3-hover-black" onclick="currentDiv({{ loop.index }})"></span>
+				{% endfor %}
+			</div>
+		</div>
+	{% else %}
+        No curves generated - please check input file.
+    {% endif %}
+
+<script>
+	var slideIndex = 1;
+	showDivs(slideIndex);
+
+	function plusDivs(n) {
+		showDivs(slideIndex += n);
+	}
+
+	function currentDiv(n) {
+		showDivs(slideIndex = n);
+	}
+
+	function showDivs(n) {
+		var i;
+		var x = document.getElementsByClassName("mySlides");
+		var dots = document.getElementsByClassName("demo");
+		if (n > x.length) {slideIndex = 1}
+		if (n < 1) {slideIndex = x.length}
+		for (i = 0; i < x.length; i++) {
+			x[i].style.display = "none";  
+		}
+		for (i = 0; i < dots.length; i++) {
+			dots[i].className = dots[i].className.replace(" w3-black", "");
+		}
+		x[slideIndex-1].style.display = "block";  
+		dots[slideIndex-1].className += " w3-black";
+	}
+</script>
+{% endblock %}
