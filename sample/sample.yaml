@@ -99,6 +99,6 @@ Sample 8:
 Sample 9:
     <<: *ref1
     cog: 
-    - (61.668-1.5) survey_foot
+    - (61.668-1.5)*3937/1200 survey_foot
     -  61.668m 
     - (61.668+1.5)m

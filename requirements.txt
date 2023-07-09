@@ -1,0 +1,10 @@
+APScheduler==3.10.1
+Flask==2.0.2
+GitPython==3.1.31
+matplotlib==3.7.1
+numpy==1.25.0
+Pint==0.22
+pytest==7.4.0
+pytest-html==3.2.0
+python-dotenv==1.0.0
+PyYAML==6.0

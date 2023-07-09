@@ -39,6 +39,7 @@ def create_plots(crane_capacity_a, crane_capacity_b, **kwargs):
                 kwargs['true_hook_load_b'][i],
                 kwargs['factored_hook_load_a'][i],
                 kwargs['factored_hook_load_b'][i])
+    logger.debug("Plots prepared.")
     return figures
 
 

@@ -1,6 +1,8 @@
 __pycache__
 .pytest_cache
 .env
+logfile.txt
+web/logfile.txt
 
 lib/__pycache__
 
@@ -10,4 +12,3 @@ web/__pycache__
 web/tmp/*
 web/.pytest_cache
 web/.env
-web/.flaskenv

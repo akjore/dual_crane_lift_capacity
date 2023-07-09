@@ -54,7 +54,31 @@ def crane_curve_ids():
 
 
 if __name__ == "__main__":
-    import dualCraneLiftCapacity.lib.init
+    import logging.config
+    import os
+
+    import yaml
+
+
+    # configure logging
+    def setup_logging(config_file_path='logging.config.yaml', logging_level=logging.INFO):
+        '''
+        Setup logging configuration
+
+        Args:
+            config_file_path:   if environment variable is not provided, use this file math
+            logging_level:      logging level
+        '''
+        path = config_file_path
+        if os.path.exists(path):
+            with open(path, 'rt') as f:
+                config = yaml.safe_load(f.read())
+            logging.config.dictConfig(config)
+        else:
+            logging.basicConfig(level=logging_level)
+
+
+    setup_logging()
 
     logger = logging.getLogger(__name__)
     logger_pil = logging.getLogger('PIL')
