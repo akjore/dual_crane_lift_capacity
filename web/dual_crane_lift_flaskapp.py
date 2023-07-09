@@ -18,8 +18,8 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import dualCraneLiftCapacity.dual_crane_lift
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY')
-PYTEST_OUTPUT_FILE = os.environ.get('PYTEST_OUTPUT_FILE')
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', "default_key")
+PYTEST_OUTPUT_FILE = os.environ.get('PYTEST_OUTPUT_FILE', "pytest.html")
 
 app.jinja_env.globals['GIT_HASH'] = None
 app.jinja_env.globals['GIT_COMMIT_DATE'] = None
@@ -54,7 +54,6 @@ def setup_logging(config_file_path='../logging.config.yaml', logging_level=loggi
         logging.basicConfig(level=logging_level)
 
 
-@app.before_first_request
 def get_git_commit_info():
     '''
     Get current git hash code and commit date, and store these in jinja_env.globals
@@ -66,19 +65,17 @@ def get_git_commit_info():
     app.logger.debug(f"Git commit date: {app.jinja_env.globals['GIT_COMMIT_DATE']}")
 
 
-@app.before_first_request
 def get_test_status():
     '''
     Runs pytest. The return code and the location of the the test report are stored in jinja_env.globals
     '''
-    filename = os.path.join(app.root_path, app.config['TESTS_DIRECTORY'], PYTEST_OUTPUT_FILE)
+    filename = os.path.join(app.root_path, app.config['TMP_DIRECTORY'], PYTEST_OUTPUT_FILE)
     app.jinja_env.globals['TEST_RESULT_FILENAME'] = PYTEST_OUTPUT_FILE
     app.jinja_env.globals['TEST_RETCODE'] = pytest.main(["../tests", "--self-contained-html", f"--html={filename}"])
     app.logger.debug(f"Pytest result file: {app.jinja_env.globals['TEST_RESULT_FILENAME']}")
     app.logger.debug(f"Pytest return code: {app.jinja_env.globals['TEST_RETCODE']}")
 
 
-@app.before_first_request
 def get_supported_crane_curves():
     '''
     Gets a list of the supported crane curves and stores in jinja_env.globals
@@ -215,8 +212,8 @@ def get_file(folder, name):
         return send_from_directory(directory=app.config['TMP_DIRECTORY'], path=name)
     elif folder == "sample":
         return send_from_directory(directory=app.config['SAMPLE_DIRECTORY'], path=name)
-    elif folder == "tests":
-        return send_from_directory(directory=app.config['TESTS_DIRECTORY'], path=name)
+#    elif folder == "tests":
+#        return send_from_directory(directory=app.config['TESTS_DIRECTORY'], path=name)
 
 
 @app.route("/delete_file/<path:name>", methods=['DELETE'])
@@ -244,6 +241,11 @@ def stream():
     return Response(generate(), mimetype='text/event-stream')
 
 
+with app.app_context():
+    get_git_commit_info()
+    get_test_status()
+    get_supported_crane_curves()
+
 setup_logging()
 
 # suppress logging from matplotlib, except errors
@@ -253,9 +255,10 @@ logger_pil.setLevel(logging.ERROR)
 logger_plt.setLevel(logging.ERROR)
 
 # set scheduler for deleting old files
-sched = BackgroundScheduler(daemon=True)
-sched.add_job(clear_tmp_files, 'interval', minutes=60)
-sched.start()
+# NOTE: Temporarily commented out as pythonanywhere does not support this
+# sched = BackgroundScheduler(daemon=True)
+# sched.add_job(clear_tmp_files, 'interval', minutes=60)
+# sched.start()
 
 if __name__ == "__main__":
     app.run()
