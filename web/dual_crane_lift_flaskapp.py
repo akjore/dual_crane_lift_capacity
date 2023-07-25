@@ -212,8 +212,6 @@ def get_file(folder, name):
         return send_from_directory(directory=app.config['TMP_DIRECTORY'], path=name)
     elif folder == "sample":
         return send_from_directory(directory=app.config['SAMPLE_DIRECTORY'], path=name)
-#    elif folder == "tests":
-#        return send_from_directory(directory=app.config['TESTS_DIRECTORY'], path=name)
 
 
 @app.route("/delete_file/<path:name>", methods=['DELETE'])
