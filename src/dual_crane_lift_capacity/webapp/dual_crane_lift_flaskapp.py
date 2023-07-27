@@ -7,7 +7,6 @@ import time
 import zipfile
 from io import BytesIO
 
-import git
 import pytest
 import yaml
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -38,15 +37,13 @@ TMP_FOLDER = 'TMP_FOLDER'
 TEST_FOLDER = '../../tests'         # relative to package folder
 SAMPLE_FOLDER = 'sample'            # relative to package folder
 
-# def get_git_commit_info():
-#     '''
-#     Get current git hash code and commit date, and store these in jinja_env.globals
-#     '''
-#     repo = git.Repo(search_parent_directories=True)
-#     app.jinja_env.globals['GIT_HASH'] = repo.git.rev_parse(repo.head, short=True)
-#     app.jinja_env.globals['GIT_COMMIT_DATE'] = datetime.datetime.fromtimestamp(repo.head.object.committed_date).isoformat(sep=" ")
-#     app.logger.debug(f"Git hash: {app.jinja_env.globals['GIT_HASH']}")
-#     app.logger.debug(f"Git commit date: {app.jinja_env.globals['GIT_COMMIT_DATE']}")
+
+def get_version_info():
+    '''
+    Get current version and store in jinja_env.globals
+    '''
+    app.jinja_env.globals['VERSION'] = dual_crane_lift_capacity.__version__
+    app.logger.debug(f"Version: {app.jinja_env.globals['VERSION']}")
 
 
 def get_test_status():
@@ -241,6 +238,7 @@ def stream():
 
 with app.app_context():
 #    get_git_commit_info()
+    get_version_info()
     get_test_status()
     get_supported_crane_curves()
 
