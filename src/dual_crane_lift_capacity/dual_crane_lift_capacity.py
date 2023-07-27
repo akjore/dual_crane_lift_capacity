@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from dualCraneLiftCapacity.lib.init import ureg
+from . import ureg
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ def dual_crane_lift_capacity(crane_capacity_a, crane_capacity_b, **kwargs):
     cog_lim = __cog_limits(lift_factors, weight, crane_capacity_a, crane_capacity_b, rigging_weight_a, rigging_weight_b, lift_point_a, lift_point_b)
 
     # Create an overall x-axis to use as basis for the crane capacity curve
-    x = __create_x(cog, cog_lim, cg_max_lift_capacity, 0.5*ureg.meters)
+    x = __create_x(cog, cog_lim, cg_max_lift_capacity, 0.5 * ureg.meters)
 
     # determine the combined crane capacity (lift capacity) for each of the cg's in x
     lift_cap = __lift_capacity(x, cg_max_lift_capacity, crane_capacity_a, crane_capacity_b, rigging_weight_a, rigging_weight_b, lift_point_a, lift_point_b) / lift_factors[:, None]
@@ -101,6 +101,7 @@ def __hook_loads(weight, lift_point_a, lift_point_b, cog, rigging_weight_a, rigg
     logger.debug(f'hook_load_a: {hook_load_a}')
     logger.debug(f'hook_load_b: {hook_load_b}')
     return hook_load_a, hook_load_b
+
 
 @ureg.wraps('=A', ('=A', '=A', '=A', '=A'))
 def __create_x(cog, cog_lim, cg_max_lift_capacity, dx_spacer):
@@ -217,8 +218,8 @@ def __cog_limits(lift_factors, weight, crane_capacity_a, crane_capacity_b, riggi
         f_b_min = f_b_max_b
         f_b_max = f_b_max_a
 
-    x0 = ((f_b_min - rigging_weight_b) / weight / lift_factors) * (np.nanmin(lift_point_b, axis=1)-np.nanmin(lift_point_a, axis=1)) + np.nanmin(lift_point_a, axis=1)
-    x1 = ((f_b_max - rigging_weight_b) / weight / lift_factors) * (np.nanmax(lift_point_b, axis=1)-np.nanmax(lift_point_a, axis=1)) + np.nanmax(lift_point_a, axis=1)
+    x0 = ((f_b_min - rigging_weight_b) / weight / lift_factors) * (np.nanmin(lift_point_b, axis=1) - np.nanmin(lift_point_a, axis=1)) + np.nanmin(lift_point_a, axis=1)
+    x1 = ((f_b_max - rigging_weight_b) / weight / lift_factors) * (np.nanmax(lift_point_b, axis=1) - np.nanmax(lift_point_a, axis=1)) + np.nanmax(lift_point_a, axis=1)
     x = np.stack((x0, x1), axis=1)
 
     # Overwrite non-physical solutions (CoGs outside lifting points)

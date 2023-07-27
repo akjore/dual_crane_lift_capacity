@@ -1,0 +1,4 @@
+[flake8]
+ignore =
+    # Ignore 79 character line length limit
+    E501

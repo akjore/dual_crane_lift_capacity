@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pytest
 import yaml
 
-import dualCraneLiftCapacity.dual_crane_lift
+from dual_crane_lift_capacity.dual_crane_lift import dual_crane_lift
 
 KEYS = ['crane_curve_a', 'crane_curve_b', 'crane_radius_a', 'crane_radius_b', 'rigging_weight_a', 'rigging_weight_b', 'weight_uncertainty_factor', 'cog_uncertainty_factor', 'tilt_factor', 'lift_point_a', 'lift_point_b', 'weight', 'cog']
 SOME_KEYS = ['crane_radius_a', 'crane_radius_b', 'rigging_weight_a', 'rigging_weight_b', 'weight_uncertainty_factor', 'cog_uncertainty_factor', 'tilt_factor', 'lift_point_a', 'lift_point_b', 'weight', 'cog']
@@ -35,7 +35,7 @@ def test_valid_input(input_sample):
     Args:
         input_sample: dict representing a valid input file
     """
-    ret = dualCraneLiftCapacity.dual_crane_lift.main(data=yaml.dump(input_sample), interactive=False)
+    ret = dual_crane_lift(data=yaml.dump(input_sample), interactive=False)
 
     assert type(ret) is dict
     assert type(ret['Sample 1']) is plt.Figure
@@ -51,7 +51,7 @@ def test_crane_curve(input_sample):
     input_sample['Sample 1']['crane_curve_a'] = "blabla"
 
     with pytest.raises(KeyError):
-        dualCraneLiftCapacity.dual_crane_lift.main(data=yaml.dump(input_sample), interactive=False)
+        dual_crane_lift(data=yaml.dump(input_sample), interactive=False)
 
 
 @pytest.mark.parametrize("key", KEYS)
@@ -65,7 +65,7 @@ def test_missing_parameter(input_sample, key):
     """
     del input_sample['Sample 1'][key]
     with pytest.raises(KeyError):
-        dualCraneLiftCapacity.dual_crane_lift.main(data=yaml.dump(input_sample), interactive=False)
+        dual_crane_lift(data=yaml.dump(input_sample), interactive=False)
 
 
 @pytest.mark.parametrize("key", SOME_KEYS)
@@ -79,7 +79,7 @@ def test_wrong_dimension(input_sample, key):
     """
     input_sample['Sample 1'][key] = '1 cubic meter'  # valid inputs are either lengths, masses, or dimensionless.
     with pytest.raises(ValueError):
-        dualCraneLiftCapacity.dual_crane_lift.main(data=yaml.dump(input_sample), interactive=False)
+        dual_crane_lift(data=yaml.dump(input_sample), interactive=False)
 
 
 def test_no_input():
@@ -87,7 +87,7 @@ def test_no_input():
     Check that no or empty input returns an Exception
     """
     with pytest.raises(Exception):
-        dualCraneLiftCapacity.dual_crane_lift.main(data='', interactive=False)
+        dual_crane_lift(data='', interactive=False)
 
 
 def test_wrong_input():
@@ -95,4 +95,4 @@ def test_wrong_input():
     Check that wrong input returns a TypeError
     """
     with pytest.raises(TypeError):
-        dualCraneLiftCapacity.dual_crane_lift.main(data='abc123:', interactive=False)
+        dual_crane_lift(data='abc123:', interactive=False)

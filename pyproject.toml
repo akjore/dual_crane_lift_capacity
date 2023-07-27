@@ -1,0 +1,28 @@
+[build-system]
+requires = [ "setuptools>=41", "wheel", "setuptools-git-versioning<2", ]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml"]
+
+[tool.setuptools-git-versioning]
+enabled = true
+
+[project]
+name = "dual_crane_lift_capacity"
+dynamic = ["version"]
+authors = [
+  { name="Arne Kristian Jore", email="akjore@outlook.com" },
+]
+description = "Prepares lift capacity curves for dual crane lifts"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/akjore/dual_crane_lift_capacity"
+"Bug Tracker" = "https://github.com/akjore/dual_crane_lift_capacity/issues"

@@ -1,18 +1,20 @@
 import logging
 import os
+import pkg_resources
 
 import numpy as np
 import pint
 import yaml
 
-from dualCraneLiftCapacity.lib.init import Q, ureg
+from . import Q, ureg
 
 logger = logging.getLogger(__name__)
 
 
 def _load_crane_curves():
     # loads and returns the lift curves defined in the .yaml file
-    alt_file = os.path.join(os.path.dirname(__file__), 'crane_curves.yaml')
+    # alt_file = os.path.join(os.path.dirname(__file__), 'crane_curves.yaml')
+    alt_file = pkg_resources.resource_filename(__name__, 'crane_curves.yaml')
     crane_curve_file = os.getenv('CRANE_CURVE_FILENAME', alt_file)
 
     if os.path.exists(crane_curve_file):

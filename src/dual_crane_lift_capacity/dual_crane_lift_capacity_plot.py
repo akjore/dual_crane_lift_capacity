@@ -3,7 +3,7 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 
-from dualCraneLiftCapacity.lib.init import Q, ureg
+from . import Q, ureg
 
 logger = logging.getLogger(__name__)
 
@@ -16,29 +16,29 @@ def create_plots(crane_capacity_a, crane_capacity_b, **kwargs):
         x = kwargs['lift_capacity_curve']['x'][i]
         y = kwargs['lift_capacity_curve']['y'][i]
         figures[kwargs['cases'][i]] = _create_plot(
-                kwargs['cases'][i],
-                kwargs['weight_original_unit'][i],
-                kwargs['cog_original_unit'][i],
-                kwargs['lift_point_a'][i],
-                kwargs['lift_point_b'][i],
-                kwargs['crane_radius_a'][i],
-                kwargs['crane_radius_b'][i],
-                kwargs['rigging_weight_a'][i],
-                kwargs['rigging_weight_b'][i],
-                kwargs['crane_curve_a'][i],
-                kwargs['crane_curve_b'][i],
-                crane_capacity_a[i],
-                crane_capacity_b[i],
-                kwargs['tilt_factor'][i],
-                kwargs['cog_uncertainty_factor'][i],
-                kwargs['weight_uncertainty_factor'][i],
-                {'x': x, 'y': y},
-                kwargs['lift_capacity_at_cog'][i],
-                kwargs['cog_limit_at_given_weight'][i],
-                kwargs['true_hook_load_a'][i],
-                kwargs['true_hook_load_b'][i],
-                kwargs['factored_hook_load_a'][i],
-                kwargs['factored_hook_load_b'][i])
+            kwargs['cases'][i],
+            kwargs['weight_original_unit'][i],
+            kwargs['cog_original_unit'][i],
+            kwargs['lift_point_a'][i],
+            kwargs['lift_point_b'][i],
+            kwargs['crane_radius_a'][i],
+            kwargs['crane_radius_b'][i],
+            kwargs['rigging_weight_a'][i],
+            kwargs['rigging_weight_b'][i],
+            kwargs['crane_curve_a'][i],
+            kwargs['crane_curve_b'][i],
+            crane_capacity_a[i],
+            crane_capacity_b[i],
+            kwargs['tilt_factor'][i],
+            kwargs['cog_uncertainty_factor'][i],
+            kwargs['weight_uncertainty_factor'][i],
+            {'x': x, 'y': y},
+            kwargs['lift_capacity_at_cog'][i],
+            kwargs['cog_limit_at_given_weight'][i],
+            kwargs['true_hook_load_a'][i],
+            kwargs['true_hook_load_b'][i],
+            kwargs['factored_hook_load_a'][i],
+            kwargs['factored_hook_load_b'][i])
     logger.debug("Plots prepared.")
     return figures
 
@@ -216,7 +216,7 @@ def _add_annotations(ax, weight, cog_limit_at_given_weight, cog, lift_capacity_a
         x_cog = (cog[0] + cog[1]) / 2
     elif cog.size == 1:
         x_cog = cog[0]
-    y1 = 2/3 * np.min(plt.ylim()) * ax.yaxis.units + 1/3 * weight   # draw approx 1/3rd off btm of chart
+    y1 = 2 / 3 * np.min(plt.ylim()) * ax.yaxis.units + 1 / 3 * weight   # draw approx 1/3rd off btm of chart
     x1 = min(cog_limit_at_given_weight)
     x2 = max(cog_limit_at_given_weight)
     _annotate_point_pair(ax, f"{x_cog-x1:~0.3f}", (x1, y1), (x_cog, y1))
@@ -226,11 +226,11 @@ def _add_annotations(ax, weight, cog_limit_at_given_weight, cog, lift_capacity_a
     indices_of_peak = np.where(lift_capacity_curve['y'] == lift_capacity_curve['y'].max())
     x_peak = lift_capacity_curve['x'][indices_of_peak]
     peak = np.sort(np.append(x_peak, x_cog))
-    dist = np.diff(peak)                            		        # get the distance between each point
-    y2 = 1/3 * np.min(plt.ylim()) * ax.yaxis.units + 2/3 * weight   # draw approx 2/3rd off btm of chart
+    dist = np.diff(peak)                            		            # get the distance between each point
+    y2 = 1 / 3 * np.min(plt.ylim()) * ax.yaxis.units + 2 / 3 * weight   # draw approx 2/3rd off btm of chart
     for i in range(dist.size):
         if dist[i] > 0.:
-            _annotate_point_pair(ax, f"{dist[i]:~0.3f}", (peak[i], y2), (peak[i+1], y2))
+            _annotate_point_pair(ax, f"{dist[i]:~0.3f}", (peak[i], y2), (peak[i + 1], y2))
 
     y_peak = np.max(lift_capacity_curve['y'])
     arrowprops_dimline = {'arrowstyle': '-', 'color': 'lightgrey'}
@@ -274,7 +274,7 @@ def _annotate_point_pair(ax, text, xy_start, xy_end, xycoords='data', arrowprops
         offset.reverse()
 
     if not (np.isnan(xy_start[0]) or np.isnan(xy_start[1]) or np.isnan(xy_end[0]) or np.isnan(xy_end[1])):
-        xy_text = ((xy_start[0] + xy_end[0])/2., (xy_start[1] + xy_end[1])/2.)
+        xy_text = ((xy_start[0] + xy_end[0]) / 2., (xy_start[1] + xy_end[1]) / 2.)
 
         ax.annotate('', xy=xy_end, xycoords=xycoords, xytext=xy_start, textcoords=xycoords, arrowprops=arrowprops)
-        ax.annotate(text=text, xy=xy_text,	xycoords=xycoords, xytext=offset, textcoords='offset points', ha=ha, va=va, fontsize=7)
+        ax.annotate(text=text, xy=xy_text, xycoords=xycoords, xytext=offset, textcoords='offset points', ha=ha, va=va, fontsize=7)

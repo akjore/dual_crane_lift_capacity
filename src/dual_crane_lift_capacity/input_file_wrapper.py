@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import numpy as np
 import yaml
 
-from dualCraneLiftCapacity.lib.init import Q
+from . import Q
 
 
 @dataclass
@@ -23,7 +23,7 @@ class DualLiftingCases:
     weight: np.array = None
     weight_original_unit: list = None
     cog: np.array = None
-    cog_original_unit:  list = None
+    cog_original_unit: list = None
     cases: list = None
 
     filename: str = None
@@ -66,16 +66,16 @@ class DualLiftingCases:
         self.cases = list(self._content)
 
         tmp1 = [d['lift_point_a'] if isinstance(d['lift_point_a'], list) else [d['lift_point_a']] for d in self._content.values()]
-        tmp2 = [d+[d[0]]*(2-len(d)) for d in tmp1]
+        tmp2 = [d + [d[0]] * (2 - len(d)) for d in tmp1]
         self.lift_point_a = self.__to_array([np.sort(Q.from_list([Q(s) for s in d])) for d in tmp2])
 
         tmp1 = [d['lift_point_b'] if isinstance(d['lift_point_b'], list) else [d['lift_point_b']] for d in self._content.values()]
-        tmp2 = [d+[d[0]]*(2-len(d)) for d in tmp1]
+        tmp2 = [d + [d[0]] * (2 - len(d)) for d in tmp1]
         self.lift_point_b = self.__to_array([np.sort(Q.from_list([Q(s) for s in d])) for d in tmp2])
 
         tmp1 = [d['cog'] if isinstance(d['cog'], list) else [d['cog']] for d in self._content.values()]
         tmp2 = [[Q(s) for s in d] for d in tmp1]
-        self.cog = self.__to_array([Q.from_list(d+[np.NaN*d[0].units]*(3-len(d))) for d in tmp2])
+        self.cog = self.__to_array([Q.from_list(d + [np.NaN * d[0].units] * (3 - len(d))) for d in tmp2])
 
         self.cog_original_unit = [Q.from_list([Q(s) for s in d]) for d in tmp1]
 

@@ -5,14 +5,13 @@ import logging
 import matplotlib
 import matplotlib.pyplot as plt
 
-import dualCraneLiftCapacity.lib.crane_curves
-import dualCraneLiftCapacity.lib.dual_crane_lift_capacity
-import dualCraneLiftCapacity.lib.dual_crane_lift_capacity_plot
-import dualCraneLiftCapacity.lib.init
-import dualCraneLiftCapacity.lib.input_file_wrapper
+from . import crane_curves
+from . import dual_crane_lift_capacity
+from . import dual_crane_lift_capacity_plot
+from . import input_file_wrapper
 
 
-def main(filename='', data='', interactive=True):
+def dual_crane_lift(filename='', data='', interactive=True):
     '''
     Main entry point if running dualCraneLiftCapacity from the console.
     1. Based on selected crane curves and lifting radii, gets the cranes' lifting capacities.
@@ -32,16 +31,16 @@ def main(filename='', data='', interactive=True):
     if not interactive:
         matplotlib.use('agg')
 
-    data_cls = dualCraneLiftCapacity.lib.input_file_wrapper.DualLiftingCases(filename=filename, data=data)
+    data_cls = input_file_wrapper.DualLiftingCases(filename=filename, data=data)
 
     # Get crane capacities for specified crane curves and radii
-    crane_capacity_a = dualCraneLiftCapacity.lib.crane_curves.get_crane_capacity(data_cls.crane_curve_a, data_cls.crane_radius_a)
-    crane_capacity_b = dualCraneLiftCapacity.lib.crane_curves.get_crane_capacity(data_cls.crane_curve_b, data_cls.crane_radius_b)
+    crane_capacity_a = crane_curves.get_crane_capacity(data_cls.crane_curve_a, data_cls.crane_radius_a)
+    crane_capacity_b = crane_curves.get_crane_capacity(data_cls.crane_curve_b, data_cls.crane_radius_b)
 
-    ret = dualCraneLiftCapacity.lib.dual_crane_lift_capacity.dual_crane_lift_capacity(crane_capacity_a, crane_capacity_b, **dataclasses.asdict(data_cls))
+    ret = dual_crane_lift_capacity.dual_crane_lift_capacity(crane_capacity_a, crane_capacity_b, **dataclasses.asdict(data_cls))
 
     # Create plots
-    figures = dualCraneLiftCapacity.lib.dual_crane_lift_capacity_plot.create_plots(crane_capacity_a, crane_capacity_b, **{**dataclasses.asdict(data_cls), **ret})
+    figures = dual_crane_lift_capacity_plot.create_plots(crane_capacity_a, crane_capacity_b, **{**dataclasses.asdict(data_cls), **ret})
 
     if interactive:
         plt.show()
@@ -50,7 +49,7 @@ def main(filename='', data='', interactive=True):
 
 
 def crane_curve_ids():
-    return dualCraneLiftCapacity.lib.crane_curves.crane_curve_ids()
+    return crane_curves.crane_curve_ids()
 
 
 if __name__ == "__main__":
@@ -59,14 +58,13 @@ if __name__ == "__main__":
 
     import yaml
 
-
     # configure logging
     def setup_logging(config_file_path='logging.config.yaml', logging_level=logging.INFO):
         '''
         Setup logging configuration
 
         Args:
-            config_file_path:   if environment variable is not provided, use this file math
+            config_file_path:   if environment variable is not provided, use this file path
             logging_level:      logging level
         '''
         path = config_file_path
@@ -76,7 +74,6 @@ if __name__ == "__main__":
             logging.config.dictConfig(config)
         else:
             logging.basicConfig(level=logging_level)
-
 
     setup_logging()
 
@@ -92,7 +89,7 @@ if __name__ == "__main__":
 
     if args.inputfile:
         try:
-            main(filename=args.inputfile, interactive=True)
+            dual_crane_lift(filename=args.inputfile, interactive=True)
         except Exception as e:
             logger.error(e, exc_info=True)
     else:

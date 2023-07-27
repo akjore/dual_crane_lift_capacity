@@ -13,13 +13,18 @@ import yaml
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import (Flask, Response, jsonify, render_template, request,
                    send_from_directory)
+from importlib.resources import files
+
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
-import dualCraneLiftCapacity.dual_crane_lift
+import dual_crane_lift_capacity.dual_crane_lift
+
+
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', "default_key")
-PYTEST_OUTPUT_FILE = os.environ.get('PYTEST_OUTPUT_FILE', "pytest.html")
+app.config.from_prefixed_env()      # Loads all FLASK_xx variables in environment into app.config
+app.secret_key = app.config.get('SECRET_KEY', 'default_key')
 
 app.jinja_env.globals['GIT_HASH'] = None
 app.jinja_env.globals['GIT_COMMIT_DATE'] = None
@@ -27,51 +32,43 @@ app.jinja_env.globals['TEST_RESULT_FILENAME'] = None
 app.jinja_env.globals['TEST_RETCODE'] = None
 
 app.config['UPLOAD_EXTENSIONS'] = ".yaml, .yml"
-app.config['TMP_DIRECTORY'] = "tmp"
-app.config['SAMPLE_DIRECTORY'] = "../sample"
-app.config['TESTS_DIRECTORY'] = "../tests"
 app.config['MAX_TMP_FILE_AGE'] = 12     # hours
 
+TMP_FOLDER = 'TMP_FOLDER'
+TEST_FOLDER = '../../tests'         # relative to package folder
+SAMPLE_FOLDER = 'sample'            # relative to package folder
 
-def setup_logging(config_file_path='../logging.config.yaml', logging_level=logging.INFO, env_key='LOG_CFG'):
-    '''
-    Setup logging configuration
-
-    Args:
-        env_key:            if environment variable provided, use file path specified here
-        config_file_path:   if environment variable is not provided, use this file math
-        logging_level:      logging level
-    '''
-    path = config_file_path
-    value = os.getenv(env_key, None)
-    if value:
-        path = value
-    if os.path.exists(path):
-        with open(path, 'rt') as f:
-            config = yaml.safe_load(f.read())
-        logging.config.dictConfig(config)
-    else:
-        logging.basicConfig(level=logging_level)
-
-
-def get_git_commit_info():
-    '''
-    Get current git hash code and commit date, and store these in jinja_env.globals
-    '''
-    repo = git.Repo(search_parent_directories=True)
-    app.jinja_env.globals['GIT_HASH'] = repo.git.rev_parse(repo.head, short=True)
-    app.jinja_env.globals['GIT_COMMIT_DATE'] = datetime.datetime.fromtimestamp(repo.head.object.committed_date).isoformat(sep=" ")
-    app.logger.debug(f"Git hash: {app.jinja_env.globals['GIT_HASH']}")
-    app.logger.debug(f"Git commit date: {app.jinja_env.globals['GIT_COMMIT_DATE']}")
+# def get_git_commit_info():
+#     '''
+#     Get current git hash code and commit date, and store these in jinja_env.globals
+#     '''
+#     repo = git.Repo(search_parent_directories=True)
+#     app.jinja_env.globals['GIT_HASH'] = repo.git.rev_parse(repo.head, short=True)
+#     app.jinja_env.globals['GIT_COMMIT_DATE'] = datetime.datetime.fromtimestamp(repo.head.object.committed_date).isoformat(sep=" ")
+#     app.logger.debug(f"Git hash: {app.jinja_env.globals['GIT_HASH']}")
+#     app.logger.debug(f"Git commit date: {app.jinja_env.globals['GIT_COMMIT_DATE']}")
 
 
 def get_test_status():
     '''
     Runs pytest. The return code and the location of the the test report are stored in jinja_env.globals
     '''
-    filename = os.path.join(app.root_path, app.config['TMP_DIRECTORY'], PYTEST_OUTPUT_FILE)
-    app.jinja_env.globals['TEST_RESULT_FILENAME'] = PYTEST_OUTPUT_FILE
-    app.jinja_env.globals['TEST_RETCODE'] = pytest.main(["../tests", "--self-contained-html", f"--html={filename}"])
+
+    filename = app.config.get('PYTEST_OUTPUT_FILE')
+    if not filename:
+        filename = 'pytest.html'
+        app.logger.warning(f'Config variable PYTEST_OUTPUT_FILE not set - writing test results to {filename}')
+
+    if app.config.get(TMP_FOLDER):
+        filename_with_path = os.path.join(app.config.get(TMP_FOLDER), filename)
+    else:
+        filename_with_path = filename
+        app.logger.warning(f'Config variable TMP_FOLDER not set - writing test results to {filename_with_path}')
+
+    test_folder = os.path.join(files('dual_crane_lift_capacity'), TEST_FOLDER)
+
+    app.jinja_env.globals['TEST_RESULT_FILENAME'] = filename
+    app.jinja_env.globals['TEST_RETCODE'] = pytest.main([test_folder, "--self-contained-html", f"--html={filename_with_path}"])
     app.logger.debug(f"Pytest result file: {app.jinja_env.globals['TEST_RESULT_FILENAME']}")
     app.logger.debug(f"Pytest return code: {app.jinja_env.globals['TEST_RETCODE']}")
 
@@ -80,7 +77,8 @@ def get_supported_crane_curves():
     '''
     Gets a list of the supported crane curves and stores in jinja_env.globals
     '''
-    supported_crane_curves = dualCraneLiftCapacity.dual_crane_lift.crane_curve_ids()
+
+    supported_crane_curves = dual_crane_lift_capacity.dual_crane_lift.crane_curve_ids()
     app.jinja_env.globals['SUPPORTED_CRANE_CURVE_IDS'] = supported_crane_curves
     app.logger.debug(f"Supported crane curves: {app.jinja_env.globals['SUPPORTED_CRANE_CURVE_IDS']}")
 
@@ -89,8 +87,8 @@ def clear_tmp_files():
     '''
     Goes through the files in path 'path', and deletes any older than 'max_age' hours
     '''
-    path = app.config['TMP_DIRECTORY']
-    max_age = app.config['MAX_TMP_FILE_AGE']
+    path = app.config.get('TMP_FOLDER')
+    max_age = app.config.get('MAX_TMP_FILE_AGE')
     now = time.time()
     for filename in os.listdir(path):
         if os.path.getmtime(os.path.join(path, filename)) < now - max_age * 60 * 60:
@@ -131,19 +129,19 @@ def prepare_dual_crane_lift_plots(filecontent):
         Exception: some error while processing the provided filecontent
     '''
     try:
-        figures = dualCraneLiftCapacity.dual_crane_lift.main(data=filecontent, interactive=False)
+        figures = dual_crane_lift_capacity.dual_crane_lift.dual_crane_lift(data=filecontent, interactive=False)
         app.logger.debug(f"Returned with {len(figures)} figure(s).")
 
         pngs = {k: make_png(v) for k, v in figures.items()}
 
         if len(pngs) == 1:
             # as only one file, write the figure to file as png
-            with tempfile.NamedTemporaryFile(suffix=".png", dir=app.config['TMP_DIRECTORY'], delete=False) as file:
+            with tempfile.NamedTemporaryFile(suffix=".png", dir=app.config[TMP_FOLDER], delete=False) as file:
                 file.write(list(pngs.values())[0])
                 file.flush()
         else:
             # multiple files -> bundle in a zip file
-            file = tempfile.NamedTemporaryFile(suffix=".zip", dir=app.config['TMP_DIRECTORY'], delete=False)
+            file = tempfile.NamedTemporaryFile(suffix=".zip", dir=app.config[TMP_FOLDER], delete=False)
             with zipfile.ZipFile(file.name, 'w') as myzip:
                 for case, png in pngs.items():
                     myzip.writestr(case+'.png', data=png)
@@ -209,14 +207,15 @@ def dual_crane_lift():
 @app.route("/get_file/<path:folder>/<path:name>")
 def get_file(folder, name):
     if not folder:
-        return send_from_directory(directory=app.config['TMP_DIRECTORY'], path=name)
+        return send_from_directory(directory=app.config[TMP_FOLDER], path=name)
     elif folder == "sample":
-        return send_from_directory(directory=app.config['SAMPLE_DIRECTORY'], path=name)
+        sample_folder = os.path.join(files('dual_crane_lift_capacity'), SAMPLE_FOLDER)
+        return send_from_directory(directory=sample_folder, path=name)
 
 
 @app.route("/delete_file/<path:name>", methods=['DELETE'])
 def delete_file(name):
-    os.remove(os.path.join(app.config['TMP_DIRECTORY'], name))
+    os.remove(os.path.join(app.config[TMP_FOLDER], name))
     return jsonify({'resultfile': name})
 
 
@@ -240,11 +239,9 @@ def stream():
 
 
 with app.app_context():
-    get_git_commit_info()
+#    get_git_commit_info()
     get_test_status()
     get_supported_crane_curves()
-
-setup_logging()
 
 # suppress logging from matplotlib, except errors
 logger_pil = logging.getLogger('PIL')
@@ -259,4 +256,25 @@ logger_plt.setLevel(logging.ERROR)
 # sched.start()
 
 if __name__ == "__main__":
+    def setup_logging(config_file_path='../logging.config.yaml', logging_level=logging.INFO, env_key='LOG_CFG'):
+        '''
+        Setup logging configuration
+
+        Args:
+            env_key:            if environment variable provided, use file path specified here
+            config_file_path:   if environment variable is not provided, use this file math
+            logging_level:      logging level
+        '''
+        path = config_file_path
+        value = os.getenv(env_key, None)
+        if value:
+            path = value
+        if os.path.exists(path):
+            with open(path, 'rt') as f:
+                config = yaml.safe_load(f.read())
+            logging.config.dictConfig(config)
+        else:
+            logging.basicConfig(level=logging_level)
+
+    setup_logging
     app.run()
