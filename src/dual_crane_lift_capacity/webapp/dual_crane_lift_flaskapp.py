@@ -227,6 +227,7 @@ def logger():
 @app.route('/stream')
 def stream():
     def generate():
+        import io
         with io.StringIO() as f:
 #        with open('job.log') as f:
             while True:
