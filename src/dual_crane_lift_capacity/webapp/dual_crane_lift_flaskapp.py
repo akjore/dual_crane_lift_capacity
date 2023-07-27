@@ -34,7 +34,7 @@ app.config['UPLOAD_EXTENSIONS'] = ".yaml, .yml"
 app.config['MAX_TMP_FILE_AGE'] = 12     # hours
 
 TMP_FOLDER = 'TMP_FOLDER'
-TEST_FOLDER = '../../tests'         # relative to package folder
+TEST_FOLDER = 'tests'               # relative to package folder
 SAMPLE_FOLDER = 'sample'            # relative to package folder
 
 
