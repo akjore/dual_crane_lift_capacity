@@ -11,6 +11,8 @@ from . import dual_crane_lift_capacity_plot
 from . import input_file_wrapper
 
 
+logger = logging.getLogger(__name__)
+
 def dual_crane_lift(filename='', data='', interactive=True):
     '''
     Main entry point if running dualCraneLiftCapacity from the console.
