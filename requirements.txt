@@ -3,7 +3,7 @@ numpy>=1.21.6
 Pint>=0.18
 pytest==7.4.0
 PyYAML==6.0
-Flask==2.3.2
+Flask<=2.2.5
 pytest-html==3.2.0
 python-dotenv==1.0.0
 PyYAML==6.0
