@@ -1,6 +1,6 @@
 matplotlib>=3.5.3
 numpy>=1.21.6
-Pint>=0.21.1
+Pint>=0.18
 pytest==7.4.0
 PyYAML==6.0
 Flask==2.3.2
