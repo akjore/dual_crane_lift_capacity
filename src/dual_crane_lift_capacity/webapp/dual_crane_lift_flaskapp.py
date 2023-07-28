@@ -1,6 +1,5 @@
 import datetime
 import logging
-import logging.config
 import os
 import tempfile
 import time
@@ -237,10 +236,13 @@ def stream():
 
 
 with app.app_context():
-#    get_git_commit_info()
     get_version_info()
     get_test_status()
     get_supported_crane_curves()
+
+    logger.error(f'Name: {__name__}')
+    logger.error(f'Env TMP_FOLDER: {app.config.get("TMP_FOLDER")}')
+    logger.error(f'Env FLASK_TMP_FOLDER: {app.config.get("FLASK_TMP_FOLDER")}')
 
 # suppress logging from matplotlib, except errors
 logger_pil = logging.getLogger('PIL')
@@ -255,6 +257,8 @@ logger_plt.setLevel(logging.ERROR)
 # sched.start()
 
 if __name__ == "__main__":
+    import logging.config
+
     def setup_logging(config_file_path='../logging.config.yaml', logging_level=logging.INFO, env_key='LOG_CFG'):
         '''
         Setup logging configuration
