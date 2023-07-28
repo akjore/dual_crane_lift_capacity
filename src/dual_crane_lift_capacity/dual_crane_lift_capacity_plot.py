@@ -128,7 +128,7 @@ def _add_lift_capacity_curve(ax, curve):
     plt.ylabel(f"Weight [{ax.yaxis.units}]")
 
     # add lift capacity curve and annotate
-    plt.plot(curve['x'], curve['y'], marker='_')
+    plt.plot(curve['x'], curve['y'], marker='_', label="test label")
 
     h_align = np.repeat('right', curve['x'].size / 2)
     h_align = np.append(h_align, np.repeat('left', curve['x'].size / 2))

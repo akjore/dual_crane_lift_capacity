@@ -1,4 +1,3 @@
-import argparse
 import dataclasses
 import logging
 
@@ -56,6 +55,7 @@ def crane_curve_ids():
 
 
 if __name__ == "__main__":
+    import argparse
     import logging.config
     import os
 

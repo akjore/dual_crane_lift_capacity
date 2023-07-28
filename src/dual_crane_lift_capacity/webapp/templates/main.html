@@ -19,8 +19,8 @@
 		<tr id="xxx">
 			<td class="record"></td>
 			<td></td>
-			<td align="right" target="_new"><a href=""><i class="fa-solid fa-download"></i></a></td>
-			<td align="right"><a href=""><i class="fa-solid fa-chart-line"></i></a></td>
+			<td align="right"><a href="" target="_blank"><i class="fa-solid fa-download"></i></a></td>
+			<td align="right"><a href="" target="_blank"><i class="fa-solid fa-chart-line"></i></a></td>
 			<td align="right"><a href=""><i class="fa-solid fa-scroll"></i></a></td>
 			<td align="right"><a href=""><i class="fa-solid fa-trash"></i></a></td>
 		</tr>
@@ -59,14 +59,14 @@
 			let td = clone.querySelectorAll("td");
 			td[0].textContent = results.datetime;
 			td[1].textContent = results.filename;
-			td[2].getElementsByTagName("a")[0].href = baseURL_get_file.replace(/DUMMY_VALUE/, results.resultfile);
-			td[3].getElementsByTagName("a")[0].href = "";
-			td[5].getElementsByTagName("a")[0].href = baseURL_js_delete_file.replace(/DUMMY_VALUE/, results.resultfile);
+			td[2].getElementsByTagName("a")[0].href = baseURL_get_file.replace(/DUMMY_VALUE/, results.resultfiles[0]);
+			td[3].getElementsByTagName("a")[0].href = baseURL_get_file.replace(/DUMMY_VALUE/, results.resultfiles[1]);
+			td[5].getElementsByTagName("a")[0].href = baseURL_js_delete_file.replace(/DUMMY_VALUE/, results.resultfiles);
 			tbody.insertBefore(clone, tbody.firstChild);
 
 			// Set row id to facilitate later removal
 			let tr = document.getElementById("xxx");
-			tr.id = results.resultfile;
+			tr.id = results.resultfiles;
 		}
 	}
 	

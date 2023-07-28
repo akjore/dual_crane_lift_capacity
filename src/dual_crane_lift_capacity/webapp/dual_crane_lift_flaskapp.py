@@ -6,6 +6,8 @@ import time
 import zipfile
 from io import BytesIO
 
+import json
+import numpy as np
 import pytest
 import yaml
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -128,21 +130,37 @@ def prepare_dual_crane_lift_plots(filecontent):
         figures = dual_crane_lift_capacity.dual_crane_lift.dual_crane_lift(data=filecontent, interactive=False)
         app.logger.debug(f"Returned with {len(figures)} figure(s).")
 
+        # grab the data from the plots
+        data = []
+        for k, v in figures.items():
+            case = {}
+            # assumption! axis 0 contains the main plot
+            for line in v.axes[0].get_lines():
+                # any lines containing one or more nans are not of interest - skip
+                if not (np.isnan(line.get_xdata().magnitude).any() or np.isnan(line.get_ydata().magnitude).any()):
+                    case[line.get_label()] = {"x": line.get_xdata().magnitude.tolist(), "y": line.get_ydata().magnitude.tolist()}
+            
+            data.append({v.axes[0].title.get_text(): case})
+
         pngs = {k: make_png(v) for k, v in figures.items()}
+
+        # save data as .json
+        with tempfile.NamedTemporaryFile(suffix=".json", dir=app.config.get(TMP_FOLDER), delete=False) as file_data:
+            file_data.write(bytes(json.dumps(data, indent=5), 'ascii'))
 
         if len(pngs) == 1:
             # as only one file, write the figure to file as png
-            with tempfile.NamedTemporaryFile(suffix=".png", dir=app.config.get(TMP_FOLDER), delete=False) as file:
-                file.write(list(pngs.values())[0])
-                file.flush()
+            with tempfile.NamedTemporaryFile(suffix=".png", dir=app.config.get(TMP_FOLDER), delete=False) as file_plot:
+                file_plot.write(list(pngs.values())[0])
+                file_plot.flush()
         else:
             # multiple files -> bundle in a zip file
-            file = tempfile.NamedTemporaryFile(suffix=".zip", dir=app.config.get(TMP_FOLDER), delete=False)
-            with zipfile.ZipFile(file.name, 'w') as myzip:
+            file_plot = tempfile.NamedTemporaryFile(suffix=".zip", dir=app.config.get(TMP_FOLDER), delete=False)
+            with zipfile.ZipFile(file_plot.name, 'w') as myzip:
                 for case, png in pngs.items():
                     myzip.writestr(case+'.png', data=png)
-            file.close()
-        return os.path.basename(file.name)
+            file_plot.close()
+        return os.path.basename(file_plot.name), os.path.basename(file_data.name)
     except Exception as e:
         app.logger.error(repr(e))
         raise e
@@ -181,18 +199,18 @@ def dual_crane_lift():
         # all well - create plots and return to use
         app.logger.debug(f"Input file provided: {file.filename}")
         try:
-            retfile = prepare_dual_crane_lift_plots(filecontent=file.read())
+            retfiles = prepare_dual_crane_lift_plots(filecontent=file.read())
         except KeyError as ex:
             return f'Missing key {ex}', 400
         except ValueError as ex:
             return str(ex), 400
         except Exception as ex:
             return repr(ex), 400
-        app.logger.debug(f"Result file created: {retfile}")
+        app.logger.debug(f"Result files created: {retfiles}")
 
         results = {'datetime': datetime.datetime.now().replace(microsecond=0).isoformat(sep=" "),
                    'filename': file.filename,
-                   'resultfile': retfile}
+                   'resultfiles': retfiles}
         app.logger.debug(f"Returning: {results}")
         return jsonify(results)
 
@@ -211,7 +229,9 @@ def get_file(folder, name):
 
 @app.route("/delete_file/<path:name>", methods=['DELETE'])
 def delete_file(name):
-    os.remove(os.path.join(app.config.get(TMP_FOLDER), name))
+    files = name.split(sep=",")
+    for file in files:
+        os.remove(os.path.join(app.config.get(TMP_FOLDER), file))
     return jsonify({'resultfile': name})
 
 
