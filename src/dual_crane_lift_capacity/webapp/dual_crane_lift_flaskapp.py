@@ -132,12 +132,12 @@ def prepare_dual_crane_lift_plots(filecontent):
 
         if len(pngs) == 1:
             # as only one file, write the figure to file as png
-            with tempfile.NamedTemporaryFile(suffix=".png", dir=app.config[TMP_FOLDER], delete=False) as file:
+            with tempfile.NamedTemporaryFile(suffix=".png", dir=app.config.get(TMP_FOLDER), delete=False) as file:
                 file.write(list(pngs.values())[0])
                 file.flush()
         else:
             # multiple files -> bundle in a zip file
-            file = tempfile.NamedTemporaryFile(suffix=".zip", dir=app.config[TMP_FOLDER], delete=False)
+            file = tempfile.NamedTemporaryFile(suffix=".zip", dir=app.config.get(TMP_FOLDER), delete=False)
             with zipfile.ZipFile(file.name, 'w') as myzip:
                 for case, png in pngs.items():
                     myzip.writestr(case+'.png', data=png)
@@ -174,7 +174,7 @@ def dual_crane_lift():
 
         # check filename extension is as expected
         file_ext = os.path.splitext(file.filename)[1]
-        if file_ext not in app.config['UPLOAD_EXTENSIONS']:
+        if file_ext not in app.config.get('UPLOAD_EXTENSIONS'):
             app.logger.error(f"File does not have a valid extension: {file_ext}")
             return "Invali  d file type", 400
 
@@ -203,7 +203,7 @@ def dual_crane_lift():
 @app.route("/get_file/<path:folder>/<path:name>")
 def get_file(folder, name):
     if not folder:
-        return send_from_directory(directory=app.config[TMP_FOLDER], path=name)
+        return send_from_directory(directory=app.config.get(TMP_FOLDER), path=name)
     elif folder == "sample":
         sample_folder = os.path.join(files('dual_crane_lift_capacity'), SAMPLE_FOLDER)
         return send_from_directory(directory=sample_folder, path=name)
@@ -211,7 +211,7 @@ def get_file(folder, name):
 
 @app.route("/delete_file/<path:name>", methods=['DELETE'])
 def delete_file(name):
-    os.remove(os.path.join(app.config[TMP_FOLDER], name))
+    os.remove(os.path.join(app.config.get(TMP_FOLDER), name))
     return jsonify({'resultfile': name})
 
 
