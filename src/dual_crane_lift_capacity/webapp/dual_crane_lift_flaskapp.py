@@ -139,7 +139,7 @@ def prepare_dual_crane_lift_plots(filecontent):
                 # any lines containing one or more nans are not of interest - skip
                 if not (np.isnan(line.get_xdata().magnitude).any() or np.isnan(line.get_ydata().magnitude).any()):
                     case[line.get_label()] = {"x": line.get_xdata().magnitude.tolist(), "y": line.get_ydata().magnitude.tolist()}
-            
+
             data.append({v.axes[0].title.get_text(): case})
 
         pngs = {k: make_png(v) for k, v in figures.items()}
