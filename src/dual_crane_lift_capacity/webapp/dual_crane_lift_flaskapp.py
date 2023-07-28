@@ -240,9 +240,9 @@ with app.app_context():
     get_test_status()
     get_supported_crane_curves()
 
-    logger.error(f'Name: {__name__}')
-    logger.error(f'Env TMP_FOLDER: {app.config.get("TMP_FOLDER")}')
-    logger.error(f'Env FLASK_TMP_FOLDER: {app.config.get("FLASK_TMP_FOLDER")}')
+    app.logger.error(f'Name: {__name__}')
+    app.logger.error(f'Env TMP_FOLDER: {app.config.get("TMP_FOLDER")}')
+    app.logger.error(f'Env FLASK_TMP_FOLDER: {app.config.get("FLASK_TMP_FOLDER")}')
 
 # suppress logging from matplotlib, except errors
 logger_pil = logging.getLogger('PIL')
