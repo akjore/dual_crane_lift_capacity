@@ -15,6 +15,7 @@ def create_plots(crane_capacity_a, crane_capacity_b, **kwargs):
     for i in range(0, len(kwargs['cases'])):
         x = kwargs['lift_capacity_curve']['x'][i]
         y = kwargs['lift_capacity_curve']['y'][i]
+        logger.debug(f"Start preparing plot for {kwargs['cases'][i]}")
         figures[kwargs['cases'][i]] = _create_plot(
             kwargs['cases'][i],
             kwargs['weight_original_unit'][i],
@@ -39,6 +40,7 @@ def create_plots(crane_capacity_a, crane_capacity_b, **kwargs):
             kwargs['true_hook_load_b'][i],
             kwargs['factored_hook_load_a'][i],
             kwargs['factored_hook_load_b'][i])
+        logger.debug("Plot prepared")
     logger.debug("Plots prepared.")
     return figures
 
