@@ -15,7 +15,6 @@ def create_plots(crane_capacity_a, crane_capacity_b, **kwargs):
     for i in range(0, len(kwargs['cases'])):
         x = kwargs['lift_capacity_curve']['x'][i]
         y = kwargs['lift_capacity_curve']['y'][i]
-        logger.debug(f"Start preparing plot for {kwargs['cases'][i]}")
         figures[kwargs['cases'][i]] = _create_plot(
             kwargs['cases'][i],
             kwargs['weight_original_unit'][i],
@@ -40,7 +39,6 @@ def create_plots(crane_capacity_a, crane_capacity_b, **kwargs):
             kwargs['true_hook_load_b'][i],
             kwargs['factored_hook_load_a'][i],
             kwargs['factored_hook_load_b'][i])
-        logger.debug("Plot prepared")
     logger.debug("Plots prepared.")
     return figures
 
@@ -105,10 +103,10 @@ def _create_plot(
     elif cog.size == 2:
         colours = ['red']
 
-    plt.scatter(cog, lift_capacity_at_cog, marker='.', linestyle='None', color=colours)
+    plt.scatter(cog, lift_capacity_at_cog, marker='.', linestyle='None', color=colours, label="Weight margin")
 
     # add markers for CoG margin
-    plt.plot(cog_limit_at_given_weight, weight.repeat(2), marker='.', linestyle='None', markeredgecolor='red')
+    plt.plot(cog_limit_at_given_weight, weight.repeat(2), marker='.', linestyle='None', markeredgecolor='red', label="CoG margin")
 
     # add miscellaneous annotations
     _add_annotations(ax, weight, cog_limit_at_given_weight, cog, lift_capacity_at_cog, lift_capacity_curve)
@@ -130,7 +128,7 @@ def _add_lift_capacity_curve(ax, curve):
     plt.ylabel(f"Weight [{ax.yaxis.units}]")
 
     # add lift capacity curve and annotate
-    plt.plot(curve['x'], curve['y'], marker='_', label="test label")
+    plt.plot(curve['x'], curve['y'], marker='_', label="Lift capacity curve")
 
     h_align = np.repeat('right', curve['x'].size / 2)
     h_align = np.append(h_align, np.repeat('left', curve['x'].size / 2))
@@ -142,15 +140,15 @@ def _add_lift_capacity_curve(ax, curve):
 def _add_cog(weight, cog):
     # add weight and CoG to plot
     if cog.size == 1:		        # CoG only provided
-        plt.plot(cog, weight, 'go')
+        plt.plot(cog, weight, 'go', label="CoG")
     elif cog.size == 2:		        # Envelope only provided
         w = Q.from_list([weight] * 2)
-        plt.plot(cog, w, 'r')
+        plt.plot(cog, w, 'r', label="CoG")
     elif cog.size == 3:		        # CoG and envelope
         cg = Q.from_list([cog[0], cog[2]])
         w = Q.from_list([weight] * 2)
-        plt.plot(cg, w, 'r')
-        plt.plot(cog[1], weight, 'go')
+        plt.plot(cg, w, 'r', label="CoG envelope")
+        plt.plot(cog[1], weight, 'go', label="CoG")
 
 
 def _add_info_tables(weight, cog, lift_point_a, lift_point_b, crane_radius_a, crane_radius_b, rigging_weight_a, rigging_weight_b,
