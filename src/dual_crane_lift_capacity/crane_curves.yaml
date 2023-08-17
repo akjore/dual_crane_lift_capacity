@@ -222,17 +222,30 @@ Sleipnir.main:
   - [54.080m, 8566t]      # Beacon Wind 1 & 2, HI-126-02-01
   - [54.190m, 8508t]      # Beacon Wind 1 & 2, HI-226-02-03
   - [54.620m, 8447t]      # Beacon Wind 1 & 2, HI-226-02-02
+  - [54.860m, 8399t]      # Johan Sverdrup, C152-HM-V-XS-00015-01
   - [55.150m, 8339t]      # Beacon Wind 1 & 2, HI-126-02-01
   - [55.157m, 8332.446t]
+  - [55.811m, 8000t]      # Johan Sverdrup, C152-HM-V-XS-00015-01
   - [56.000m, 8163t]      # Peregrino, C140-HM-V-MA-0024
   - [56.699m, 8002.358t]
+  - [57.500m, 7870t]      # Johan Sverdrup, C168-HM-V-XD-30171-01
+  - [57.670m, 7838t]      # Johan Sverdrup, C168-HM-V-XD-30171-01
   - [58.359m, 7680.181t]
+  - [58.653m, 7655t]      # Johan Sverdrup, C152-HM-V-XS-00018-01
+  - [58.654m, 7654t]      # Johan Sverdrup, C152-HM-V-XS-00018-01
+  - [58.704m, 7645t]      # Johan Sverdrup, C152-HM-V-XS-00016-01
+  - [59.606m, 7484t]      # Johan Sverdrup, C152-HM-V-XS-00018-01
   - [60.374m, 7342.383t]
   - [62.270m, 7012.415t]
+  - [63.534m, 6825t]      # Johan Sverdrup, C152-HM-V-XS-00018-01
+  - [64.041m, 6745t]      # Johan Sverdrup, C152-HM-V-XS-00015-01
   - [64.402m, 6674.657t]
   - [64.858m, 6609t]      # Peregrino, C140-HM-V-MA-0024
+  - [65.340m, 6530t]      # Johan Sverdrup, C152-HM-V-XS-00017-01
   - [65.563m, 6494t]      # Peregrino, C140-HM-V-MA-0024
   - [66.535m, 6329.026t]
+  - [68.396m, 6039t]      # Johan Sverdrup, C152-HM-V-XS-00016-01
+  - [68.396m, 6034t]      # Johan Sverdrup, C152-HM-V-XS-00017-01
   - [68.549m, 6006.971t]
   - [70.327m, 5684.835t]
   - [72.341m, 5347.036t]
@@ -255,16 +268,16 @@ Sleipnir.aux:
   - [44.688m, 2500t]
   - [49.997m, 2500t]
   - [54.717m, 2500t]
-  - [58.000m, 1000t]      # Peregrino, C140-HM-V-MA-0024 (p. 135)
+#  - [58.000m, 1000t]      # Peregrino, C140-HM-V-MA-0024 (p. 135)
   - [58.256m, 2500t]
   - [60.028m, 2453.858t]
   - [63.452m, 2344.825t]
-  - [64.600m, 1000t]      # Peregrino, C140-HM-V-MA-0024 (p. 156)
-  - [65.000m, 1000t]      # Peregrino, C140-HM-V-MA-0025 (p. 317)
+#  - [64.600m, 1000t]      # Peregrino, C140-HM-V-MA-0024 (p. 156)
+#  - [65.000m, 1000t]      # Peregrino, C140-HM-V-MA-0025 (p. 317)
   - [67.110m, 2228t]
-  - [68.188m, 1000t]      # Peregrino, C140-HM-V-MA-0025 (p. 216)
+#  - [68.188m, 1000t]      # Peregrino, C140-HM-V-MA-0025 (p. 216)
   - [69.828m, 2158.085t]
-  - [69.968m, 1000t]      # Peregrino, C140-HM-V-MA-0025 (p. 216)
+#  - [69.968m, 1000t]      # Peregrino, C140-HM-V-MA-0025 (p. 216)
   - [75.731m, 2018.413t]
   - [79.981m, 1925.407t]
   - [83.300m, 1843t]
