@@ -1,3 +1,4 @@
+"""Web application front-end for dual crane lift."""
 import datetime
 import json
 import logging
@@ -7,7 +8,9 @@ import time
 import zipfile
 from importlib.resources import files
 from io import BytesIO
+from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 import yaml
@@ -35,61 +38,56 @@ TEST_FOLDER = "tests"               # relative to package folder
 SAMPLE_FOLDER = "sample"            # relative to package folder
 
 
-def get_version_info():
+def get_version_info() -> None:
     """Get current version and store in jinja_env.globals."""
     app.jinja_env.globals["VERSION"] = dual_crane_lift_capacity.__version__
     app.logger.debug(f"Version: {app.jinja_env.globals['VERSION']}")
 
 
-def get_test_status():
-    """Runs pytest. The return code and the location of the the test report are stored in jinja_env.globals."""
+def get_test_status() -> None:
+    """Run pytest. The return code and the location of the the test report are stored in jinja_env.globals."""
     filename = app.config.get("PYTEST_OUTPUT_FILE")
     if not filename:
         filename = "pytest.html"
         app.logger.warning(f"Config variable PYTEST_OUTPUT_FILE not set - writing test results to {filename}")
 
     if app.config.get(TMP_FOLDER):
-        filename_with_path = os.path.join(app.config.get(TMP_FOLDER), filename)
+        filename_with_path = Path(app.config.get(TMP_FOLDER)) / filename
     else:
         filename_with_path = filename
         app.logger.warning(f"Config variable TMP_FOLDER not set - writing test results to {filename_with_path}")
 
-    test_folder = os.path.join(files("dual_crane_lift_capacity"), TEST_FOLDER)
+    test_folder = Path(files("dual_crane_lift_capacity")) / TEST_FOLDER
 
     app.jinja_env.globals["TEST_RESULT_FILENAME"] = filename
-    app.jinja_env.globals["TEST_RETCODE"] = pytest.main([test_folder, "--self-contained-html", f"--html={filename_with_path}"])
+    app.jinja_env.globals["TEST_RETCODE"] = pytest.main([test_folder, "--self-contained-html", 
+                                                         f"--html={filename_with_path}"])
     app.logger.debug(f"Pytest result file: {app.jinja_env.globals['TEST_RESULT_FILENAME']}")
     app.logger.debug(f"Pytest return code: {app.jinja_env.globals['TEST_RETCODE']}")
 
 
-def get_supported_crane_curves():
-    """Gets a list of the supported crane curves and stores in jinja_env.globals."""
+def get_supported_crane_curves() -> None:
+    """Get a list of the supported crane curves and store in jinja_env.globals."""
     supported_crane_curves = dual_crane_lift_capacity.dual_crane_lift.crane_curve_ids()
     app.jinja_env.globals["SUPPORTED_CRANE_CURVE_IDS"] = supported_crane_curves
     app.logger.debug(f"Supported crane curves: {app.jinja_env.globals['SUPPORTED_CRANE_CURVE_IDS']}")
 
 
-def clear_tmp_files():
-    """Goes through the files in path 'path', and deletes any older than 'max_age' hours."""
+def clear_tmp_files() -> None:
+    """Go through the files in path 'path', and delete any older than 'max_age' hours."""
     path = app.config.get("TMP_FOLDER")
     max_age = app.config.get("MAX_TMP_FILE_AGE")
     now = time.time()
-    for filename in os.listdir(path):
-        if os.path.getmtime(os.path.join(path, filename)) < now - max_age * 60 * 60:
-            if os.path.isfile(os.path.join(path, filename)):
-                os.remove(os.path.join(path, filename))
+    folder = Path(path)
+    for file in folder:
+        if file.is_file() and file.stat().st_mtime < now - max_age * 60 * 60:
+            file.unlink()
 
+def make_png(figure: plt.Figure) -> bytes:
+    """Take a pyplot figure and write it to a png in memory.
 
-def make_png(figure):
-    """Takes a pyplot figure and writes it to a png in memory.
-
-    Args:
-    ----
-        figure: pyplot.figure object
-
-    Returns:
-    -------
-        figure as a png
+    :param figure: pyplot.figure object
+    :returns figure as a png
     """
     canvas = FigureCanvas(figure)
     png_output = BytesIO()
@@ -98,22 +96,15 @@ def make_png(figure):
     return png_output.getvalue()
 
 
-def prepare_dual_crane_lift_plots(filecontent):
-    """Takes an input file, creates figures, converts to pngs, and writes to disk.
+def prepare_dual_crane_lift_plots(filecontent: str) -> tuple:
+    """Take an input file, create figures, convert to pngs, and write to disk.
+
     If a single case is provided, the .png filename is returned.
     If multiple cases are provided, a .zip filename is returned.
 
-    Args:
-    ----
-        filecontent: a yaml inputfile
-
-    Returns:
-    -------
-        a filename, either a png or zip
-
-    Raises:
-    ------
-        Exception: some error while processing the provided filecontent
+    :param filecontent: a yaml inputfile
+    :returns a filename, either a png or zip
+    :raises Exception: some error while processing the provided filecontent
     """
     try:
         figures = dual_crane_lift_capacity.dual_crane_lift.dual_crane_lift(data=filecontent, interactive=False)
@@ -127,7 +118,8 @@ def prepare_dual_crane_lift_plots(filecontent):
             for line in v.axes[0].get_lines():
                 # any lines containing one or more nans are not of interest - skip
                 if not (np.isnan(line.get_xdata().magnitude).any() or np.isnan(line.get_ydata().magnitude).any()):
-                    case[line.get_label()] = {"x": line.get_xdata().magnitude.tolist(), "y": line.get_ydata().magnitude.tolist()}
+                    case[line.get_label()] = {"x": line.get_xdata().magnitude.tolist(), 
+                                              "y": line.get_ydata().magnitude.tolist()}
 
             data.append({v.axes[0].title.get_text(): case})
 
@@ -149,19 +141,18 @@ def prepare_dual_crane_lift_plots(filecontent):
                 for case, png in pngs.items():
                     myzip.writestr(case+".png", data=png)
             file_plot.close()
-        return os.path.basename(file_plot.name), os.path.basename(file_data.name)
-    except Exception as e:
-        app.logger.error(repr(e))
+        return Path(file_plot.name).name, Path(file_data.name).name
+    except Exception:
+        app.logger.exception()
         raise
 
 
 @app.route("/", methods=["GET", "POST"])
 @app.route("/dualCraneLift", methods=["GET", "POST"])
-def dual_crane_lift():
+def dual_crane_lift() -> str:
     """Main/default page for dual crane lift app.
 
-    Returns
-    -------
+    :returns
         GET: returns the main.html web page
         POST: processes input files and returns the name of the zip files
     """
@@ -179,7 +170,8 @@ def dual_crane_lift():
             return "No filename provided", 400
 
         # check filename extension is as expected
-        file_ext = os.path.splitext(file.filename)[1]
+        file_ext = Path(file.filename).suffix
+
         if file_ext not in app.config.get("UPLOAD_EXTENSIONS"):
             app.logger.error(f"File does not have a valid extension: {file_ext}")
             return "Invali  d file type", 400
@@ -207,29 +199,31 @@ def dual_crane_lift():
 
 @app.route("/get_file/<path:name>", defaults={"folder": None})
 @app.route("/get_file/<path:folder>/<path:name>")
-def get_file(folder, name):
+def get_file(folder: str, name: str) -> Response:
+    """Provide file requested by user."""
     if not folder:
         return send_from_directory(directory=app.config.get(TMP_FOLDER), path=name)
-    elif folder == "sample":
-        sample_folder = os.path.join(files("dual_crane_lift_capacity"), SAMPLE_FOLDER)
+    if folder == "sample":
+        sample_folder = Path(files("dual_crane_lift_capacity")) / SAMPLE_FOLDER
         return send_from_directory(directory=sample_folder, path=name)
     return None
 
 
 @app.route("/delete_file/<path:name>", methods=["DELETE"])
-def delete_file(name):
+def delete_file(name: str) -> Response:
+    """Delete specified file."""
     files = name.split(sep=",")
     for file in files:
-        os.remove(os.path.join(app.config.get(TMP_FOLDER), file))
+        f = Path(app.config.get(TMP_FOLDER)) / file
+        f.unlink()
     return jsonify({"resultfile": name})
 
 
 @app.route("/crane_curves")
-def crane_curves():
+def crane_curves() -> Response:
     """Show the crane curves.
 
-    Returns
-    -------
+    :returns
         GET: shows the crane curves
     """
     app.logger.debug(f"Entering using method: {request.method}")
@@ -247,15 +241,18 @@ def crane_curves():
 
 
 @app.route("/logger")
-def logger():
+def logger() -> str:
+    """Show log file content."""
     return render_template("logger.html")
 
 
 @app.route("/stream")
-def stream():
-    def generate():
+def stream() -> str:
+    """Stream logging messages to user."""
+    def generate() -> str:
         # with io.StringIO() as f:
-        with open("tstlog.txt") as f:
+        file = Path("tstlog.txt")
+        with file.open() as f:
             # with ch as f:
             while True:
                 s = f.read()
@@ -287,25 +284,25 @@ logger_plt.setLevel(logging.ERROR)
 if __name__ == "__main__":
     import logging.config
 
-    def setup_logging(config_file_path="../logging.config.yaml", logging_level=logging.INFO, env_key="LOG_CFG"):
-        """Setup logging configuration.
+    def setup_logging(config_file_path: str="../logging.config.yaml", logging_level: str=logging.INFO, 
+                      env_key: str="LOG_CFG") -> None:
+        """Prepare logging configuration.
 
-        Args:
-        ----
-            env_key:            if environment variable provided, use file path specified here
-            config_file_path:   if environment variable is not provided, use this file math
-            logging_level:      logging level
+        :param env_key:            if environment variable provided, use file path specified here
+        :param config_file_path:   if environment variable is not provided, use this file math
+        :param logging_level:      logging level
         """
         path = config_file_path
         value = os.getenv(env_key, None)
         if value:
             path = value
-        if os.path.exists(path):
-            with open(path, "rt") as f:
+        file = Path(path)
+        if file.file_exists():
+            with file.open(path, "rt") as f:
                 config = yaml.safe_load(f.read())
             logging.config.dictConfig(config)
         else:
             logging.basicConfig(level=logging_level)
 
-    setup_logging
+    setup_logging()
     app.run()
