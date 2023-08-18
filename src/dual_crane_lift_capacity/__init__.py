@@ -1,3 +1,4 @@
+"""pint needs to be centralized."""
 from importlib.metadata import PackageNotFoundError, version
 
 from pint import UnitRegistry

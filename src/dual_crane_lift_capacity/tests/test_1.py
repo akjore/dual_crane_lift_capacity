@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import pytest
 import yaml
 from dual_crane_lift_capacity.dual_crane_lift import dual_crane_lift
+from dual_crane_lift_capacity.input_file_wrapper import MissingFileOrInputDataError
 
 KEYS = ["crane_curve_a", "crane_curve_b", "crane_radius_a", "crane_radius_b", "rigging_weight_a", 
         "rigging_weight_b", "weight_uncertainty_factor", "cog_uncertainty_factor", "tilt_factor", 
@@ -81,9 +82,8 @@ def test_wrong_dimension(input_sample: dict, key: str) -> None:
 
 def test_no_input() -> None:
     """Check that no or empty input returns an Exception."""
-    with pytest.raises(Exception):
+    with pytest.raises(MissingFileOrInputDataError):
         dual_crane_lift(data="", interactive=False)
-
 
 def test_wrong_input() -> None:
     """Check that wrong input returns a TypeError."""

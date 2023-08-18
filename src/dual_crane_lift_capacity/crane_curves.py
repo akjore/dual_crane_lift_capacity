@@ -74,7 +74,8 @@ def _crane_capacity(curve: str, radius: float) -> float:
     try:
         return np.interp(radius, _crane_radii[curve], _crane_capacities[curve], left=np.nan, right=np.nan)
     except KeyError as e:
-        raise KeyError(f"Crane curve {curve}") from e
+        logger.exception(f"Crane curve {curve}")
+        raise KeyError() from e
     except Exception:
         raise
 
