@@ -1,7 +1,6 @@
-from importlib.metadata import version, PackageNotFoundError
+from importlib.metadata import PackageNotFoundError, version
 
 from pint import UnitRegistry
-
 
 ureg = UnitRegistry()
 Q = ureg.Quantity

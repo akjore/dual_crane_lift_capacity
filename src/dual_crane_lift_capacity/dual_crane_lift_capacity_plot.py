@@ -12,33 +12,33 @@ def create_plots(crane_capacity_a, crane_capacity_b, **kwargs):
     logger.debug("Start preparing plots")
     # Create plots
     figures = {}
-    for i in range(0, len(kwargs['cases'])):
-        x = kwargs['lift_capacity_curve']['x'][i]
-        y = kwargs['lift_capacity_curve']['y'][i]
-        figures[kwargs['cases'][i]] = _create_plot(
-            kwargs['cases'][i],
-            kwargs['weight_original_unit'][i],
-            kwargs['cog_original_unit'][i],
-            kwargs['lift_point_a'][i],
-            kwargs['lift_point_b'][i],
-            kwargs['crane_radius_a'][i],
-            kwargs['crane_radius_b'][i],
-            kwargs['rigging_weight_a'][i],
-            kwargs['rigging_weight_b'][i],
-            kwargs['crane_curve_a'][i],
-            kwargs['crane_curve_b'][i],
+    for i in range(0, len(kwargs["cases"])):
+        x = kwargs["lift_capacity_curve"]["x"][i]
+        y = kwargs["lift_capacity_curve"]["y"][i]
+        figures[kwargs["cases"][i]] = _create_plot(
+            kwargs["cases"][i],
+            kwargs["weight_original_unit"][i],
+            kwargs["cog_original_unit"][i],
+            kwargs["lift_point_a"][i],
+            kwargs["lift_point_b"][i],
+            kwargs["crane_radius_a"][i],
+            kwargs["crane_radius_b"][i],
+            kwargs["rigging_weight_a"][i],
+            kwargs["rigging_weight_b"][i],
+            kwargs["crane_curve_a"][i],
+            kwargs["crane_curve_b"][i],
             crane_capacity_a[i],
             crane_capacity_b[i],
-            kwargs['tilt_factor'][i],
-            kwargs['cog_uncertainty_factor'][i],
-            kwargs['weight_uncertainty_factor'][i],
-            {'x': x, 'y': y},
-            kwargs['lift_capacity_at_cog'][i],
-            kwargs['cog_limit_at_given_weight'][i],
-            kwargs['true_hook_load_a'][i],
-            kwargs['true_hook_load_b'][i],
-            kwargs['factored_hook_load_a'][i],
-            kwargs['factored_hook_load_b'][i])
+            kwargs["tilt_factor"][i],
+            kwargs["cog_uncertainty_factor"][i],
+            kwargs["weight_uncertainty_factor"][i],
+            {"x": x, "y": y},
+            kwargs["lift_capacity_at_cog"][i],
+            kwargs["cog_limit_at_given_weight"][i],
+            kwargs["true_hook_load_a"][i],
+            kwargs["true_hook_load_b"][i],
+            kwargs["factored_hook_load_a"][i],
+            kwargs["factored_hook_load_b"][i])
     logger.debug("Plots prepared.")
     return figures
 
@@ -49,10 +49,10 @@ def _create_plot(
         tilt_factor, cog_uncertainty_factor, weight_uncertainty_factor,
         lift_capacity_curve, lift_capacity_at_cog, cog_limit_at_given_weight,
         true_hook_load_a, true_hook_load_b, factored_hook_load_a, factored_hook_load_b):
-    '''
-    Prepares lift capacity plot for a single case as provided by the inputs, and associated tables.
+    """Prepares lift capacity plot for a single case as provided by the inputs, and associated tables.
 
     Args:
+    ----
         case:                       case id
         weight:                     module weight (mass)
         cog:                        module CoG location, using same coordinate system as for hook locations.
@@ -78,8 +78,9 @@ def _create_plot(
         factored_hook_load_b:       factored hook load, crane b
 
     Returns:
+    -------
         pyplot figure
-    '''
+    """
     ureg.setup_matplotlib(True)
     plt.rcParams["figure.figsize"] = (11.69, 8.27)      # A4 paper size in inches
     fig = plt.figure(num=case)
@@ -97,16 +98,16 @@ def _create_plot(
     _add_lift_capacity_curve(ax, lift_capacity_curve)
 
     # add markers for weight margin
-    colours = ['red', 'green', 'red']
+    colours = ["red", "green", "red"]
     if cog.size == 1:
-        colours = ['green']
+        colours = ["green"]
     elif cog.size == 2:
-        colours = ['red']
+        colours = ["red"]
 
-    plt.scatter(cog, lift_capacity_at_cog, marker='.', linestyle='None', color=colours, label="Weight margin")
+    plt.scatter(cog, lift_capacity_at_cog, marker=".", linestyle="None", color=colours, label="Weight margin")
 
     # add markers for CoG margin
-    plt.plot(cog_limit_at_given_weight, weight.repeat(2), marker='.', linestyle='None', markeredgecolor='red', label="CoG margin")
+    plt.plot(cog_limit_at_given_weight, weight.repeat(2), marker=".", linestyle="None", markeredgecolor="red", label="CoG margin")
 
     # add miscellaneous annotations
     _add_annotations(ax, weight, cog_limit_at_given_weight, cog, lift_capacity_at_cog, lift_capacity_curve)
@@ -128,27 +129,27 @@ def _add_lift_capacity_curve(ax, curve):
     plt.ylabel(f"Weight [{ax.yaxis.units}]")
 
     # add lift capacity curve and annotate
-    plt.plot(curve['x'], curve['y'], marker='_', label="Lift capacity curve")
+    plt.plot(curve["x"], curve["y"], marker="_", label="Lift capacity curve")
 
-    h_align = np.repeat('right', curve['x'].size / 2)
-    h_align = np.append(h_align, np.repeat('left', curve['x'].size / 2))
+    h_align = np.repeat("right", curve["x"].size / 2)
+    h_align = np.append(h_align, np.repeat("left", curve["x"].size / 2))
 
-    for (x, y, h) in zip(curve['x'], curve['y'], h_align):
-        ax.annotate('  %d  ' % y.to(ax.yaxis.units).magnitude, (x, y), textcoords='data', verticalalignment='center', horizontalalignment=h)
+    for (x, y, h) in zip(curve["x"], curve["y"], h_align):
+        ax.annotate("  %d  " % y.to(ax.yaxis.units).magnitude, (x, y), textcoords="data", verticalalignment="center", horizontalalignment=h)
 
 
 def _add_cog(weight, cog):
     # add weight and CoG to plot
     if cog.size == 1:		        # CoG only provided
-        plt.plot(cog, weight, 'go', label="CoG")
+        plt.plot(cog, weight, "go", label="CoG")
     elif cog.size == 2:		        # Envelope only provided
         w = Q.from_list([weight] * 2)
-        plt.plot(cog, w, 'r', label="CoG")
+        plt.plot(cog, w, "r", label="CoG")
     elif cog.size == 3:		        # CoG and envelope
         cg = Q.from_list([cog[0], cog[2]])
         w = Q.from_list([weight] * 2)
-        plt.plot(cg, w, 'r', label="CoG envelope")
-        plt.plot(cog[1], weight, 'go', label="CoG")
+        plt.plot(cg, w, "r", label="CoG envelope")
+        plt.plot(cog[1], weight, "go", label="CoG")
 
 
 def _add_info_tables(weight, cog, lift_point_a, lift_point_b, crane_radius_a, crane_radius_b, rigging_weight_a, rigging_weight_b,
@@ -189,21 +190,20 @@ def _add_info_tables(weight, cog, lift_point_a, lift_point_b, crane_radius_a, cr
 def _crane_table(crane, crane_radius, crane_capacity, rigging_weight, lift_point, true_hook_load, factored_hook_load):
     avg = (np.max(lift_point) + np.min(lift_point)) / 2
     flt = (np.max(lift_point) - np.min(lift_point)) / 2
-    cell_text = [["Crane", crane],
+    return [["Crane", crane],
                  ["Crane radius", f"{crane_radius:~0.1f}"],
                  ["Crane capacity", f"{crane_capacity:~0.0f}"],
                  ["Rigging weight", f"{rigging_weight:~0.0f}"],
                  ["Lift point", fr"{avg:~0.3f} $\pm$ {flt:~0.3f}"],
                  ["Hook load", f"{true_hook_load:~0.0f}"],
                  ["Factored hook load", f"{factored_hook_load:~0.0f}"]]
-    return cell_text
 
 
 def _add_data_table(title, cell_text, loc_idx):
     ax = plt.subplot2grid((3, 3), (2, loc_idx))
     ax.set_title(title)
-    ax.axis('off')
-    tbl = ax.table(cellText=cell_text, loc='best')
+    ax.axis("off")
+    tbl = ax.table(cellText=cell_text, loc="best")
     tbl.auto_set_font_size(False)
     tbl.set_fontsize(6)
 
@@ -223,8 +223,8 @@ def _add_annotations(ax, weight, cog_limit_at_given_weight, cog, lift_capacity_a
     _annotate_point_pair(ax, f"{x2-x_cog:~0.3f}", (x_cog, y1), (x2, y1))
 
     # distance from CoG to peak
-    indices_of_peak = np.where(lift_capacity_curve['y'] == lift_capacity_curve['y'].max())
-    x_peak = lift_capacity_curve['x'][indices_of_peak]
+    indices_of_peak = np.where(lift_capacity_curve["y"] == lift_capacity_curve["y"].max())
+    x_peak = lift_capacity_curve["x"][indices_of_peak]
     peak = np.sort(np.append(x_peak, x_cog))
     dist = np.diff(peak)                            		            # get the distance between each point
     y2 = 1 / 3 * np.min(plt.ylim()) * ax.yaxis.units + 2 / 3 * weight   # draw approx 2/3rd off btm of chart
@@ -232,8 +232,8 @@ def _add_annotations(ax, weight, cog_limit_at_given_weight, cog, lift_capacity_a
         if dist[i] > 0.:
             _annotate_point_pair(ax, f"{dist[i]:~0.3f}", (peak[i], y2), (peak[i + 1], y2))
 
-    y_peak = np.max(lift_capacity_curve['y'])
-    arrowprops_dimline = {'arrowstyle': '-', 'color': 'lightgrey'}
+    y_peak = np.max(lift_capacity_curve["y"])
+    arrowprops_dimline = {"arrowstyle": "-", "color": "lightgrey"}
     _annotate_point_pair(ax, None, (x_peak[0], y2), (x_peak[0], y_peak), arrowprops=arrowprops_dimline)
     _annotate_point_pair(ax, None, (x_cog, y2), (x_cog, weight), arrowprops=arrowprops_dimline)
     _annotate_point_pair(ax, None, (x_peak[1], y2), (x_peak[1], y_peak), arrowprops=arrowprops_dimline)
@@ -242,16 +242,16 @@ def _add_annotations(ax, weight, cog_limit_at_given_weight, cog, lift_capacity_a
     idx = np.argmin(lift_capacity_at_cog)
     x_min_weight_margin = cog[idx]
     y_min_weight_margin = lift_capacity_at_cog[idx]
-    color = 'green' if cog.size == 1 else 'red'
-    x_min = min(lift_capacity_curve['x'])
-    x_max = max(lift_capacity_curve['x'])
+    color = "green" if cog.size == 1 else "red"
+    x_min = min(lift_capacity_curve["x"])
+    x_max = max(lift_capacity_curve["x"])
 
     x = [x_min, x_max]
     xcg = [min(cog), max(cog)]
     if x_min_weight_margin > x_peak[0]:
         x.reverse()
         xcg.reverse()
-    _annotate_point_pair(ax, f"{y_min_weight_margin-weight:~0.0f}", (x[0], weight), (x[0], y_min_weight_margin), ha='left', va='center', color=color)
+    _annotate_point_pair(ax, f"{y_min_weight_margin-weight:~0.0f}", (x[0], weight), (x[0], y_min_weight_margin), ha="left", va="center", color=color)
     _annotate_point_pair(ax, None, (x[0], weight), (xcg[0], weight), arrowprops=arrowprops_dimline)
 
     # this is ok for normal curves, but needs fixing for float
@@ -261,20 +261,20 @@ def _add_annotations(ax, weight, cog_limit_at_given_weight, cog, lift_capacity_a
         _annotate_point_pair(ax, None, (x[0], y_min_weight_margin), (x_peak[1], y_min_weight_margin), arrowprops=arrowprops_dimline)
 
     if cog.size == 3:
-        _annotate_point_pair(ax, f"{lift_capacity_at_cog[1]-weight:~0.0f}", (x[1], weight), (x[1], lift_capacity_at_cog[1]), ha='left', va='center', color='green')
+        _annotate_point_pair(ax, f"{lift_capacity_at_cog[1]-weight:~0.0f}", (x[1], weight), (x[1], lift_capacity_at_cog[1]), ha="left", va="center", color="green")
         _annotate_point_pair(ax, None, (x[1], weight), (xcg[1], weight), arrowprops=arrowprops_dimline)
         _annotate_point_pair(ax, None, (x[1], lift_capacity_at_cog[1]), (x_cog, lift_capacity_at_cog[1]), arrowprops=arrowprops_dimline)
 
 
-def _annotate_point_pair(ax, text, xy_start, xy_end, xycoords='data', arrowprops=None, ha='center', va='bottom', color='black'):
+def _annotate_point_pair(ax, text, xy_start, xy_end, xycoords="data", arrowprops=None, ha="center", va="bottom", color="black"):
     if arrowprops is None:
-        arrowprops = {'arrowstyle': '<->', 'shrinkA': 0., 'shrinkB': 0., 'color': color}
+        arrowprops = {"arrowstyle": "<->", "shrinkA": 0., "shrinkB": 0., "color": color}
     offset = [0, 5]
-    if ha != 'center':
+    if ha != "center":
         offset.reverse()
 
     if not (np.isnan(xy_start[0]) or np.isnan(xy_start[1]) or np.isnan(xy_end[0]) or np.isnan(xy_end[1])):
         xy_text = ((xy_start[0] + xy_end[0]) / 2., (xy_start[1] + xy_end[1]) / 2.)
 
-        ax.annotate('', xy=xy_end, xycoords=xycoords, xytext=xy_start, textcoords=xycoords, arrowprops=arrowprops)
-        ax.annotate(text=text, xy=xy_text, xycoords=xycoords, xytext=offset, textcoords='offset points', ha=ha, va=va, fontsize=7)
+        ax.annotate("", xy=xy_end, xycoords=xycoords, xytext=xy_start, textcoords=xycoords, arrowprops=arrowprops)
+        ax.annotate(text=text, xy=xy_text, xycoords=xycoords, xytext=offset, textcoords="offset points", ha=ha, va=va, fontsize=7)

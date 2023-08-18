@@ -1,37 +1,31 @@
+"""Main module for dual_crane_lift_capacity package."""
 import dataclasses
 import logging
+from pathlib import Path
 
 import matplotlib
 import matplotlib.pyplot as plt
 
-from . import crane_curves
-from . import dual_crane_lift_capacity
-from . import dual_crane_lift_capacity_plot
-from . import input_file_wrapper
-
+from . import crane_curves, dual_crane_lift_capacity, dual_crane_lift_capacity_plot, input_file_wrapper
 
 logger = logging.getLogger(__name__)
 
 
-def dual_crane_lift(filename='', data='', interactive=True):
-    '''
-    Main entry point if running dualCraneLiftCapacity from the console.
+def dual_crane_lift(filename: str="", data: str="", interactive:bool=True) -> dict:
+    """Provide a dict of figures to the caller.
+
     1. Based on selected crane curves and lifting radii, gets the cranes' lifting capacities.
     2. Gets the lift capacity curves and other misc results
-    3. Calls for plots to be generated, and either displays or returns those
+    3. Calls for plots to be generated, and either displays or returns those.
 
-    Args:
-        filename:                   filename containing input data to be processed
-        data:                       input data to be processed
-        interactive:                boolean, default True: whether or not to show the matplotlib plots
-
-    Returns:
-        figures:                    lift capacity curve(s)
-    '''
-
-    logging.getLogger('matplotlib.font_manager').disabled = True
+    :param filename: filename containing input data to be processed
+    :param data:                       input data to be processed
+    :param interactive:                boolean, default True: whether or not to show the matplotlib plots
+    :returns figures:                  lift capacity curve(s)
+    """
+    logging.getLogger("matplotlib.font_manager").disabled = True
     if not interactive:
-        matplotlib.use('agg')
+        matplotlib.use("agg")
 
     data_cls = input_file_wrapper.DualLiftingCases(filename=filename, data=data)
 
@@ -39,50 +33,54 @@ def dual_crane_lift(filename='', data='', interactive=True):
     crane_capacity_a = crane_curves.get_crane_capacity(data_cls.crane_curve_a, data_cls.crane_radius_a)
     crane_capacity_b = crane_curves.get_crane_capacity(data_cls.crane_curve_b, data_cls.crane_radius_b)
 
-    ret = dual_crane_lift_capacity.dual_crane_lift_capacity(crane_capacity_a, crane_capacity_b, **dataclasses.asdict(data_cls))
+    ret = dual_crane_lift_capacity.dual_crane_lift_capacity(crane_capacity_a, crane_capacity_b, 
+                                                            **dataclasses.asdict(data_cls))
 
     # Create plots
-    figures = dual_crane_lift_capacity_plot.create_plots(crane_capacity_a, crane_capacity_b, **{**dataclasses.asdict(data_cls), **ret})
+    figures = dual_crane_lift_capacity_plot.create_plots(crane_capacity_a, crane_capacity_b, 
+                                                         **{**dataclasses.asdict(data_cls), **ret})
 
     if interactive:
         plt.show()
-    else:
-        return figures
+        return None
+    return figures
 
 
-def crane_curve_ids():
+def crane_curve_ids() -> list:
+    """Return the list of known crane curve ids.
+
+    :returns list of known crane curve ids
+    """
     return crane_curves.crane_curve_ids()
 
 
 if __name__ == "__main__":
     import argparse
     import logging.config
-    import os
 
     import yaml
 
     # configure logging
-    def setup_logging(config_file_path='logging.config.yaml', logging_level=logging.INFO):
-        '''
-        Setup logging configuration
+    def setup_logging(config_file_path: str="logging.config.yaml", logging_level: str=logging.INFO) -> None:
+        """Prepare the logging configuration.
 
-        Args:
-            config_file_path:   if environment variable is not provided, use this file path
-            logging_level:      logging level
-        '''
-        path = config_file_path
-        if os.path.exists(path):
-            with open(path, 'rt') as f:
+        :param config_file_path:   if environment variable is not provided, use this file path
+        :param logging_level:      logging level
+        """
+        file = Path(config_file_path) if config_file_path else None
+        if file and file.exists:
+            with file.open as f:
                 config = yaml.safe_load(f.read())
             logging.config.dictConfig(config)
         else:
             logging.basicConfig(level=logging_level)
 
+
     setup_logging()
 
     logger = logging.getLogger(__name__)
-    logger_pil = logging.getLogger('PIL')
-    logger_plt = logging.getLogger('matplotlib')
+    logger_pil = logging.getLogger("PIL")
+    logger_plt = logging.getLogger("matplotlib")
     logger_pil.setLevel(logging.ERROR)
     logger_plt.setLevel(logging.ERROR)
 
