@@ -1,14 +1,35 @@
+"""Module restructures the input yaml file."""
 import logging
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
+import pint
 import yaml
 
 from . import Q
 
 
+class DimensionalityValueError(ValueError):
+    """Custom exception for unexpected dimensionality."""
+
+    def __init__(self: "DimensionalityValueError", varstr: str, actual_dim: str, expected_dim: str) -> None:
+        """Init method for class DimensionalityValueError."""
+        super().__init__(f"{varstr} has dimension [{actual_dim}] - {expected_dim} expected")
+
+
+class MissingFileOrInputDataError(Exception):
+    """Custom exception."""
+
+    def __init__(self: "MissingFileOrInputDataError") -> None:
+        """Init method for class DimensionalityValueError."""
+        super().__init__("Either filename or data is required - neither are provided")
+
+
 @dataclass
 class DualLiftingCases:
+    """Wrapper class around all provided cases."""
+
     crane_radius_a: np.array = None
     crane_radius_b: np.array = None
     rigging_weight_a: np.array = None
@@ -29,25 +50,30 @@ class DualLiftingCases:
     filename: str = None
     data: str = None
 
-    def __check_dim(self, varstr, dim):
+    def __check_dim(self: "DualLiftingCases", varstr: pint.Quantity, dim: str) -> None:
         var = getattr(locals()["self"], varstr)
         if not var.check(dim):
-            raise ValueError(f"{varstr} has dimension [{var.dimensionality}] - {dim} expected")
+            raise DimensionalityValueError(varstr, var.dimensionality, dim)
 
-    def __load_data(self):
+    def __load_data(self: "DualLiftingCases") -> None:
         # Load data, either from file or data provided
         if self.data:
             self._logger.debug(f"Loading from string: {self.data}")
             self._content = yaml.load(self.data, Loader=yaml.SafeLoader)
         elif self.filename:
-            self._logger.debug(f"Loading from file: {self.filename}")
+            file = Path(self.filename)
+            if file.exists:
+                self._logger.debug(f"Loading from file: {self.filename}")
 
-            with open(self.filename) as stream:
-                self._content = yaml.load(stream, Loader=yaml.SafeLoader)
+                with file.open() as stream:
+                    self._content = yaml.load(stream, Loader=yaml.SafeLoader)
+            else:
+                raise FileNotFoundError(self.filename)
         else:
-            raise Exception("Either filename or data is required - neither are provided")
+            raise MissingFileOrInputDataError()
 
-    def __post_init__(self):
+    def __post_init__(self: "DualLiftingCases") -> None:
+        """Populate the class properties."""
         self._logger = logging.getLogger(__name__)
         self.__load_data()
 
@@ -56,7 +82,8 @@ class DualLiftingCases:
         self.crane_radius_b = Q.from_list([Q(d["crane_radius_b"]) for d in self._content.values()])
         self.rigging_weight_a = Q.from_list([Q(d["rigging_weight_a"]) for d in self._content.values()])
         self.rigging_weight_b = Q.from_list([Q(d["rigging_weight_b"]) for d in self._content.values()])
-        self.weight_uncertainty_factor = Q.from_list([Q(d["weight_uncertainty_factor"]) for d in self._content.values()])
+        self.weight_uncertainty_factor = Q.from_list([Q(d["weight_uncertainty_factor"]) for d in 
+                                                      self._content.values()])
         self.cog_uncertainty_factor = Q.from_list([Q(d["cog_uncertainty_factor"]) for d in self._content.values()])
         self.tilt_factor = Q.from_list([Q(d["tilt_factor"]) for d in self._content.values()])
         self.crane_curve_a = [d["crane_curve_a"] for d in self._content.values()]
@@ -65,11 +92,13 @@ class DualLiftingCases:
         self.weight = Q.from_list(self.weight_original_unit)
         self.cases = list(self._content)
 
-        tmp1 = [d["lift_point_a"] if isinstance(d["lift_point_a"], list) else [d["lift_point_a"]] for d in self._content.values()]
+        tmp1 = [d["lift_point_a"] if isinstance(d["lift_point_a"], list) else [d["lift_point_a"]] for d in 
+                self._content.values()]
         tmp2 = [d + [d[0]] * (2 - len(d)) for d in tmp1]
         self.lift_point_a = self.__to_array([np.sort(Q.from_list([Q(s) for s in d])) for d in tmp2])
 
-        tmp1 = [d["lift_point_b"] if isinstance(d["lift_point_b"], list) else [d["lift_point_b"]] for d in self._content.values()]
+        tmp1 = [d["lift_point_b"] if isinstance(d["lift_point_b"], list) else [d["lift_point_b"]] for d in 
+                self._content.values()]
         tmp2 = [d + [d[0]] * (2 - len(d)) for d in tmp1]
         self.lift_point_b = self.__to_array([np.sort(Q.from_list([Q(s) for s in d])) for d in tmp2])
 
@@ -109,6 +138,6 @@ class DualLiftingCases:
         self.__check_dim("weight", "[mass]")
         self.__check_dim("cog", "[length]")
 
-    def __to_array(self, arr):
+    def __to_array(self: "DualLiftingCases", arr: pint.Quantity) -> pint.Quantity:
         unit = arr[0].units
         return [s.to(unit).magnitude for s in arr] * unit
