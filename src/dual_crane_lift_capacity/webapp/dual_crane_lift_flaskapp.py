@@ -235,6 +235,29 @@ def delete_file(name):
     return jsonify({'resultfile': name})
 
 
+@app.route("/crane_curves")
+def crane_curves():
+    '''
+    Show the crane curves
+
+    Returns:
+        GET: shows the crane curves
+    '''
+
+    app.logger.debug(f"Entering using method: {request.method}")
+    r, c = dual_crane_lift_capacity.crane_curves.crane_curves()
+
+    # reshape the data to suit the plotting tool
+    crane_curves = {}
+    for key, val in r.items():
+        key_with_units = f"{key} ({r[key][0].units:~P}, {c[key][0].units:~P})"
+        crane_curves[key_with_units] = list()
+        for ri, ci in zip(r[key], c[key]):
+            crane_curves[key_with_units].append({'x': ri.magnitude, 'y': ci.magnitude})
+
+    return render_template('crane_curves.html', crane_curves=crane_curves)
+
+
 @app.route('/logger')
 def logger():
     return render_template('logger.html')
@@ -243,9 +266,11 @@ def logger():
 @app.route('/stream')
 def stream():
     def generate():
-        import io
-        with io.StringIO() as f:
-#        with open('job.log') as f:
+        # import io
+        # with io.StringIO() as f:
+        with open('tstlog.txt') as f:
+            # print(dir(ch))
+            # with ch as f:
             while True:
                 s = f.read()
                 if s:
@@ -255,6 +280,7 @@ def stream():
     return Response(generate(), mimetype='text/event-stream')
 
 
+# some preparatory work to do at start-up of the web server
 with app.app_context():
     get_version_info()
     get_test_status()
@@ -271,6 +297,16 @@ logger_plt.setLevel(logging.ERROR)
 # sched = BackgroundScheduler(daemon=True)
 # sched.add_job(clear_tmp_files, 'interval', minutes=60)
 # sched.start()
+
+# add a logger
+# ch = logging.StreamHandler()
+# ch.setLevel(logging.DEBUG)
+# ch = logging.FileHandler('tstlog.txt')
+# ch.setLevel(logging.DEBUG)
+# formatter = logging.Formatter('%(asctime)-15s : %(filename)s : %(funcName)s : %(levelname)s : %(message)s')
+# ch.setFormatter(formatter)
+# app.logger.addHandler(ch)
+
 
 if __name__ == "__main__":
     import logging.config

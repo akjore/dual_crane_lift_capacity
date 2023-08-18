@@ -56,11 +56,10 @@ def _check():
         _check_dimensionality(_crane_capacities[crane_curve_id], '[mass]')
 
 
-@property
-def crane_curves(self):
-    global _crane_curve_radii
-    global _crane_curve_capacities
-    return (_crane_curve_radii, _crane_curve_capacities)
+def crane_curves():
+    global _crane_radii
+    global _crane_capacities
+    return (_crane_radii, _crane_capacities)
 
 
 @ureg.check(None, '[length]')
