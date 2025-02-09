@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pytest
 import yaml
 from dual_crane_lift_capacity.dual_crane_lift import dual_crane_lift
-from dual_crane_lift_capacity.input_file_wrapper import MissingFileOrInputDataError
+from dual_crane_lift_capacity.input_file_wrapper import DualLiftingCases, MissingFileOrInputDataError
 
 KEYS = ["crane_curve_a", "crane_curve_b", "crane_radius_a", "crane_radius_b", "rigging_weight_a", 
         "rigging_weight_b", "weight_uncertainty_factor", "cog_uncertainty_factor", "tilt_factor", 
@@ -40,8 +40,8 @@ def test_valid_input(input_sample: dict) -> None:
     """
     ret = dual_crane_lift(data=yaml.dump(input_sample), interactive=False)
 
-    assert isinstance(ret, dict)
-    assert isinstance(ret["Sample 1"], plt.Figure)
+    assert isinstance(ret, DualLiftingCases)
+    assert isinstance(ret.figures["Sample 1"], plt.Figure)
 
 
 def test_crane_curve(input_sample: dict) -> None:

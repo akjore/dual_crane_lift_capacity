@@ -30,6 +30,7 @@ class MissingFileOrInputDataError(Exception):
 class DualLiftingCases:
     """Wrapper class around all provided cases."""
 
+    # Input variables
     crane_radius_a: np.array = None
     crane_radius_b: np.array = None
     rigging_weight_a: np.array = None
@@ -39,43 +40,55 @@ class DualLiftingCases:
     tilt_factor: np.array = None
     lift_point_a: np.array = None
     lift_point_b: np.array = None
-    crane_curve_a: list = None
-    crane_curve_b: list = None
+    crane_curve_a: np.array = None
+    crane_curve_b: np.array = None
     weight: np.array = None
     weight_original_unit: list = None
     cog: np.array = None
     cog_original_unit: list = None
     cases: list = None
 
-    filename: str = None
-    data: str = None
+    # Computed variables (done downstream)
+    crane_capacity_a: np.array = None
+    crane_capacity_b: np.array = None
+    lift_capacity_curve_x: np.array = None 
+    lift_capacity_curve_y: np.array = None 
+    lift_capacity_at_cog: np.array = None 
+    cog_limit_at_given_weight: np.array = None 
+    true_hook_load_a: np.array = None 
+    true_hook_load_b: np.array = None
+    factored_hook_load_a: np.array = None
+    factored_hook_load_b: np.array = None
+
+    figures: dict = None
+
 
     def __check_dim(self: "DualLiftingCases", varstr: pint.Quantity, dim: str) -> None:
         var = getattr(locals()["self"], varstr)
         if not var.check(dim):
             raise DimensionalityValueError(varstr, var.dimensionality, dim)
 
-    def __load_data(self: "DualLiftingCases") -> None:
+    def __load_data(self: "DualLiftingCases", filename: str=None, data: str=None) -> None:
         # Load data, either from file or data provided
-        if self.data:
-            self._logger.debug(f"Loading from string: {self.data}")
-            self._content = yaml.load(self.data, Loader=yaml.SafeLoader)
-        elif self.filename:
-            file = Path(self.filename)
+        if data:
+            self._logger.debug(f"Loading from string: {data}")
+            self._content = yaml.load(data, Loader=yaml.SafeLoader)
+        elif filename:
+            file = Path(filename)
             if file.exists:
-                self._logger.debug(f"Loading from file: {self.filename}")
+                self._logger.debug(f"Loading from file: {filename}")
 
                 with file.open() as stream:
                     self._content = yaml.load(stream, Loader=yaml.SafeLoader)
             else:
-                raise FileNotFoundError(self.filename)
+                raise FileNotFoundError(filename)
         else:
             raise MissingFileOrInputDataError()
 
-    def __post_init__(self: "DualLiftingCases") -> None:
+    def __init__(self: "DualLiftingCases", filename: str=None, data: str=None) -> None:
         """Populate the class properties."""
         self._logger = logging.getLogger(__name__)
-        self.__load_data()
+        self.__load_data(filename=filename, data=data)
 
         # Set data variables
         self.crane_radius_a = Q.from_list([Q(d["crane_radius_a"]) for d in self._content.values()])

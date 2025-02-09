@@ -4,12 +4,12 @@ import logging
 import numpy as np
 import pint
 
-from . import ureg
+from . import input_file_wrapper, ureg
 
 logger = logging.getLogger(__name__)
 
 
-def dual_crane_lift_capacity(crane_capacity_a: pint.Quantity, crane_capacity_b: pint.Quantity, **kwargs: dict) -> dict:
+def dual_crane_lift_capacity(data_cls: input_file_wrapper.DualLiftingCases) -> dict:
     """Determine and return the lift capacity curve.
     
     Lift capacity curve is centered on the maximum capacity; therefore determine location
@@ -17,10 +17,7 @@ def dual_crane_lift_capacity(crane_capacity_a: pint.Quantity, crane_capacity_b: 
     Based on the intervals for the lift points considering float (degenerate: single point),
     determine the max possible object mass and cg range (if float) or point (if point).
 
-    :param crane_capacity_a:           crane capacity for crane a at current radius
-    :param crane_capacity_b:           crane capacity for crane b at current radius
-    :param kwargs:
-            dictionary containing the following variables
+    :data_cls: wrapper class containing the following parameters: 
                 rigging_weight_a - weight of rigging at hook a
                 rigging_weight_b - weight of rigging at hook b
                 lift_point_a - coordinates of hook a, which may consider float (i.e. a range)
@@ -30,6 +27,8 @@ def dual_crane_lift_capacity(crane_capacity_a: pint.Quantity, crane_capacity_b: 
                 tilt_factor - tilt factor
                 weight - module weight (mass)
                 cog - module CoG location, using same coordinate system as for hook locations.
+                crane_capacity_a - lifting capacity of crane a
+                crane_capacity_b - lifting capacity of crane b
 
     :returns a dictionary with the following
         Lift capacity curve
@@ -38,55 +37,44 @@ def dual_crane_lift_capacity(crane_capacity_a: pint.Quantity, crane_capacity_b: 
         True hook loads
         Factored hook loads
     """
-    rigging_weight_a = kwargs["rigging_weight_a"]
-    rigging_weight_b = kwargs["rigging_weight_b"]
-    lift_point_a = kwargs["lift_point_a"]
-    lift_point_b = kwargs["lift_point_b"]
-    weight_uncertainty_factor = kwargs["weight_uncertainty_factor"]
-    cog_uncertainty_factor = kwargs["cog_uncertainty_factor"]
-    tilt_factor = kwargs["tilt_factor"]
-    weight = kwargs["weight"]
-    cog = kwargs["cog"]
-
-    max_lift_capacity = (crane_capacity_a + crane_capacity_b - rigging_weight_a - rigging_weight_b)
+    max_lift_capacity = (data_cls.crane_capacity_a + data_cls.crane_capacity_b - data_cls.rigging_weight_a - 
+                         data_cls.rigging_weight_b)
 
     # follows from moment equilibrium
-    l_b = ((crane_capacity_a - rigging_weight_a) / max_lift_capacity)[:, None] * (lift_point_b - lift_point_a)
-    cg_max_lift_capacity = (lift_point_b - l_b)
+    l_b = ((data_cls.crane_capacity_a - data_cls.rigging_weight_a) / max_lift_capacity)[:, None] * \
+        (data_cls.lift_point_b - data_cls.lift_point_a)
+    cg_max_lift_capacity = (data_cls.lift_point_b - l_b)
     logger.debug(f"cg_max_lift_capacity: {cg_max_lift_capacity}")
 
-    lift_factors = weight_uncertainty_factor * cog_uncertainty_factor * tilt_factor
+    lift_factors = data_cls.weight_uncertainty_factor * data_cls.cog_uncertainty_factor * data_cls.tilt_factor
 
     # Determine the lift capacity for the CoG / CoG envelope
-    lift_cap_cog = __lift_capacity(cog, cg_max_lift_capacity, crane_capacity_a, crane_capacity_b, rigging_weight_a, 
-                                   rigging_weight_b, lift_point_a, lift_point_b) / lift_factors[:, None]
+    data_cls.lift_capacity_at_cog = __lift_capacity(data_cls.cog, cg_max_lift_capacity, data_cls.crane_capacity_a, 
+                            data_cls.crane_capacity_b, data_cls.rigging_weight_a, data_cls.rigging_weight_b, 
+                            data_cls.lift_point_a, data_cls.lift_point_b) / lift_factors[:, None]
 
     # Determine the CoG limits where lift capacity matches module weight
-    cog_lim = __cog_limits(lift_factors, weight, crane_capacity_a, crane_capacity_b, rigging_weight_a, rigging_weight_b,
-                           lift_point_a, lift_point_b)
+    data_cls.cog_limit_at_given_weight = __cog_limits(lift_factors, data_cls.weight, data_cls.crane_capacity_a, 
+                            data_cls.crane_capacity_b, data_cls.rigging_weight_a, data_cls.rigging_weight_b, 
+                            data_cls.lift_point_a, data_cls.lift_point_b)
 
     # Create an overall x-axis to use as basis for the crane capacity curve
-    x = __create_x(cog, cog_lim, cg_max_lift_capacity, 0.5 * ureg.meters)
+    data_cls.lift_capacity_curve_x = __create_x(data_cls.cog, data_cls.cog_limit_at_given_weight, cg_max_lift_capacity,
+                            0.5 * ureg.meters)
 
     # determine the combined crane capacity (lift capacity) for each of the cg's in x
-    lift_cap = __lift_capacity(x, cg_max_lift_capacity, crane_capacity_a, crane_capacity_b, rigging_weight_a, 
-                               rigging_weight_b, lift_point_a, lift_point_b) / lift_factors[:, None]
+    data_cls.lift_capacity_curve_y = __lift_capacity(data_cls.lift_capacity_curve_x, cg_max_lift_capacity, 
+                            data_cls.crane_capacity_a, data_cls.crane_capacity_b, data_cls.rigging_weight_a, 
+                            data_cls.rigging_weight_b, data_cls.lift_point_a, data_cls.lift_point_b) \
+                            / lift_factors[:, None]
 
     # Calculate the true hook load and factored hook load
-    true_hook_load_a, true_hook_load_b = __hook_loads(weight, lift_point_a, lift_point_b, cog, rigging_weight_a, 
-                                                      rigging_weight_b)
-    factored_hook_load_a, factored_hook_load_b = __hook_loads(weight, lift_point_a, lift_point_b, cog, rigging_weight_a,
-                                                              rigging_weight_b, lift_factors)
+    data_cls.true_hook_load_a, data_cls.true_hook_load_b = __hook_loads(data_cls.weight, data_cls.lift_point_a, 
+                            data_cls.lift_point_b, data_cls.cog, data_cls.rigging_weight_a, data_cls.rigging_weight_b)
 
-    return {
-        "lift_capacity_curve": {"x": x, "y": lift_cap}, 
-        "lift_capacity_at_cog": lift_cap_cog, 
-        "cog_limit_at_given_weight": cog_lim, 
-        "true_hook_load_a": true_hook_load_a, 
-        "true_hook_load_b": true_hook_load_b, 
-        "factored_hook_load_a": factored_hook_load_a, 
-        "factored_hook_load_b": factored_hook_load_b
-    }
+    data_cls.factored_hook_load_a, data_cls.factored_hook_load_b = __hook_loads(data_cls.weight, data_cls.lift_point_a, 
+                            data_cls.lift_point_b, data_cls.cog, data_cls.rigging_weight_a, data_cls.rigging_weight_b, 
+                            lift_factors)
 
 
 def __hook_loads(weight: pint.Quantity, lift_point_a: pint.Quantity, lift_point_b: pint.Quantity, cog: pint.Quantity, 
@@ -226,7 +214,8 @@ def __cog_limits(lift_factors: float, weight: pint.Quantity, crane_capacity_a: p
     f_b_max_b = crane_capacity_b * 1															    
 
     # Logic check that computed hook load is within capacity
-    is_not_liftable = f_b_max_a > crane_capacity_b												    
+    is_not_liftable = f_b_max_a > crane_capacity_b												 
+
     # set to nan where hook load exceeds crane capacity (not liftable)
     f_b_max_a[is_not_liftable] = np.nan														        
     f_b_max_b[is_not_liftable] = np.nan

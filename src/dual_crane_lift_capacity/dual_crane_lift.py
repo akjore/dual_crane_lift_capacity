@@ -1,5 +1,4 @@
 """Main module for dual_crane_lift_capacity package."""
-import dataclasses
 import logging
 from pathlib import Path
 
@@ -11,8 +10,9 @@ from . import crane_curves, dual_crane_lift_capacity, dual_crane_lift_capacity_p
 logger = logging.getLogger(__name__)
 
 
-def dual_crane_lift(filename: str="", data: str="", interactive:bool=True) -> dict:
-    """Provide a dict of figures to the caller.
+def dual_crane_lift(filename: str="", data: str="", interactive: bool=True, create_plots: bool=True) \
+        -> input_file_wrapper.DualLiftingCases:
+    """Perform one or more dual crane lift calculations and return data to the caller.
 
     1. Based on selected crane curves and lifting radii, gets the cranes' lifting capacities.
     2. Gets the lift capacity curves and other misc results
@@ -21,7 +21,7 @@ def dual_crane_lift(filename: str="", data: str="", interactive:bool=True) -> di
     :param filename: filename containing input data to be processed
     :param data:                       input data to be processed
     :param interactive:                boolean, default True: whether or not to show the matplotlib plots
-    :returns figures:                  lift capacity curve(s)
+    :returns DualLiftingCases:         wrapper class for input data, computed falues and figures
     """
     logging.getLogger("matplotlib.font_manager").disabled = True
     if not interactive:
@@ -30,20 +30,20 @@ def dual_crane_lift(filename: str="", data: str="", interactive:bool=True) -> di
     data_cls = input_file_wrapper.DualLiftingCases(filename=filename, data=data)
 
     # Get crane capacities for specified crane curves and radii
-    crane_capacity_a = crane_curves.get_crane_capacity(data_cls.crane_curve_a, data_cls.crane_radius_a)
-    crane_capacity_b = crane_curves.get_crane_capacity(data_cls.crane_curve_b, data_cls.crane_radius_b)
+    data_cls.crane_capacity_a = crane_curves.get_crane_capacity(data_cls.crane_curve_a, data_cls.crane_radius_a)
+    data_cls.crane_capacity_b = crane_curves.get_crane_capacity(data_cls.crane_curve_b, data_cls.crane_radius_b)
 
-    ret = dual_crane_lift_capacity.dual_crane_lift_capacity(crane_capacity_a, crane_capacity_b, 
-                                                            **dataclasses.asdict(data_cls))
+    dual_crane_lift_capacity.dual_crane_lift_capacity(data_cls)
 
     # Create plots
-    figures = dual_crane_lift_capacity_plot.create_plots(crane_capacity_a, crane_capacity_b, 
-                                                         **{**dataclasses.asdict(data_cls), **ret})
+    if create_plots:
+       dual_crane_lift_capacity_plot.create_plots(data_cls)
 
     if interactive:
         plt.show()
         return None
-    return figures
+
+    return data_cls
 
 
 def crane_curve_ids() -> list:
@@ -68,8 +68,8 @@ if __name__ == "__main__":
         :param logging_level:      logging level
         """
         file = Path(config_file_path) if config_file_path else None
-        if file and file.exists:
-            with file.open as f:
+        if file and file.exists():
+            with file.open() as f:
                 config = yaml.safe_load(f.read())
             logging.config.dictConfig(config)
         else:

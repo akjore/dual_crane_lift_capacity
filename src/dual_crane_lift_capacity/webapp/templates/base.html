@@ -20,6 +20,29 @@
 	<!-- Own content -->
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/main.css') }}" media="screen">
 
+
+	<style>
+		.nobr { white-space: nowrap }
+
+		table.fmt tr td th { font-size: 13px; }
+
+		table.fmt tr td:nth-child(n+2) { text-align: center; }
+
+		table.fmt tr th:nth-child(n+2) { text-align: center; }
+
+		td.fmtres { font-size: 11px; font-style: italic; }
+
+		td.fmtweight_margin_pos { background-color: #DAF7A6; font-weight: bold; }
+		td.fmtweight_margin_neg { background-color: pink; font-style: bold; }
+
+		input { text-align: center; width: 70px;}
+
+		td {
+		    width: 1%;
+		    white-space: nowrap;
+		}
+	</style>
+	
 {% block head %}
 <title>{% block title %}{% endblock %}</title>
 {% endblock %}

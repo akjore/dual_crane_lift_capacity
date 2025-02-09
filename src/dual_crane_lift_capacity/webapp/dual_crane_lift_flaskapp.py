@@ -107,12 +107,13 @@ def prepare_dual_crane_lift_plots(filecontent: str) -> tuple:
     :raises Exception: some error while processing the provided filecontent
     """
     try:
-        figures = dual_crane_lift_capacity.dual_crane_lift.dual_crane_lift(data=filecontent, interactive=False)
-        app.logger.debug(f"Returned with {len(figures)} figure(s).")
+#        figures = dual_crane_lift_capacity.dual_crane_lift.dual_crane_lift(data=filecontent, interactive=False)
+        data_cls = dual_crane_lift_capacity.dual_crane_lift.dual_crane_lift(data=filecontent, interactive=False)
+        app.logger.debug(f"Returned with {len(data_cls.figures)} figure(s).")
 
         # grab the data from the plots
         data = []
-        for _k, v in figures.items():
+        for _k, v in data_cls.figures.items():
             case = {}
             # assumption! axis 0 contains the main plot
             for line in v.axes[0].get_lines():
@@ -123,7 +124,7 @@ def prepare_dual_crane_lift_plots(filecontent: str) -> tuple:
 
             data.append({v.axes[0].title.get_text(): case})
 
-        pngs = {k: make_png(v) for k, v in figures.items()}
+        pngs = {k: make_png(v) for k, v in data_cls.figures.items()}
 
         # save data as .json
         with tempfile.NamedTemporaryFile(suffix=".json", dir=app.config.get(TMP_FOLDER), delete=False) as file_data:
@@ -174,7 +175,7 @@ def dual_crane_lift() -> str:
 
         if file_ext not in app.config.get("UPLOAD_EXTENSIONS"):
             app.logger.error(f"File does not have a valid extension: {file_ext}")
-            return "Invali  d file type", 400
+            return "Invalid file type", 400
 
         # all well - create plots and return to use
         app.logger.debug(f"Input file provided: {file.filename}")
@@ -263,6 +264,40 @@ def stream() -> str:
     return Response(generate(), mimetype="text/event-stream")
 
 
+@app.route("/gui")
+def gui() -> str:
+    """Launch interactive gui."""
+    return render_template("single_calc.html")
+
+
+@app.route("/api/calc_dual_crane_capacity", methods=["GET"])
+def calc_dual_crane_capacity() -> str:
+    """Calculate the dual crane capacity using the provided query parameters."""
+    # get the query parameters
+    args = request.args.to_dict()
+
+    # need to manually add units
+    for key, val in args.items():
+        if key in ["rigging_weight_a", "rigging_weight_b", "weight"]:
+            args[key] = val + "t"
+        elif key in ["crane_curve_a", "crane_curve_b", "cog_uncertainty_factor", "tilt_factor", 
+                     "weight_uncertainty_factor"]:
+            pass
+        else:
+            args[key] = val + "m"
+
+    case = {"Interactive case": args}
+
+    figure = dual_crane_lift_capacity.dual_crane_lift.dual_crane_lift(data=yaml.dump(case), interactive=False)
+
+    # so:
+    #   want the data returned as well, not just a plot
+    #   some sort of json format perhaps?
+    img = make_png(next(iter(figure.values())))
+    import base64
+    return base64.b64encode(img).decode("utf-8"), 200
+
+
 # some preparatory work to do at start-up of the web server
 with app.app_context():
     get_version_info()
@@ -279,8 +314,6 @@ logger_plt.setLevel(logging.ERROR)
 # NOTE: Temporarily commented out as pythonanywhere does not support this
 
 # add a logger
-
-
 if __name__ == "__main__":
     import logging.config
 
