@@ -1,6 +1,7 @@
 """Module restructures the input yaml file."""
+import dataclasses
 import logging
-from dataclasses import dataclass
+# from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -25,8 +26,7 @@ class MissingFileOrInputDataError(Exception):
         """Init method for class DimensionalityValueError."""
         super().__init__("Either filename or data is required - neither are provided")
 
-
-@dataclass
+@dataclasses.dataclass
 class DualLiftingCases:
     """Wrapper class around all provided cases."""
 
@@ -154,3 +154,18 @@ class DualLiftingCases:
     def __to_array(self: "DualLiftingCases", arr: pint.Quantity) -> pint.Quantity:
         unit = arr[0].units
         return [s.to(unit).magnitude for s in arr] * unit
+
+    def serialize(self: "DualLiftingCases") -> str:
+        """Serialize the current class."""
+#        for field in dataclasses.fields(self):
+        for field in self.fields():
+            print(field)
+
+#    def to_json(self) -> str:
+#        """Convert the parameters to strings in order to serialize the object."""
+#        import json
+#        return json.dumps(
+#            self,
+#            default=lambda o: o.__dict__, 
+#            sort_keys=True,
+#            indent=4)

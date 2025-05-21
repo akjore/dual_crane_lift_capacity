@@ -275,27 +275,67 @@ def calc_dual_crane_capacity() -> str:
     """Calculate the dual crane capacity using the provided query parameters."""
     # get the query parameters
     args = request.args.to_dict()
-
-    # need to manually add units
-    for key, val in args.items():
-        if key in ["rigging_weight_a", "rigging_weight_b", "weight"]:
-            args[key] = val + "t"
-        elif key in ["crane_curve_a", "crane_curve_b", "cog_uncertainty_factor", "tilt_factor", 
-                     "weight_uncertainty_factor"]:
-            pass
-        else:
-            args[key] = val + "m"
-
     case = {"Interactive case": args}
 
-    figure = dual_crane_lift_capacity.dual_crane_lift.dual_crane_lift(data=yaml.dump(case), interactive=False)
+    obj = dual_crane_lift_capacity.dual_crane_lift.dual_crane_lift(data=yaml.dump(case), interactive=False, 
+                                                                   create_plots=False)
+#    obj = dual_crane_lift_capacity.dual_crane_lift.dual_crane_lift(data=yaml.dump(case), interactive=False, 
+#                                                                   create_plots=True)
 
+    print("#############################")
+    print(obj)
+#    import matplotlib.pyplot as plt, mpld3
+#    plt.plot([3,1,4,1,5], 'ks-', mec='w', mew=5, ms=20)
+#    mpld3.show()
+#    print(obj.figures)
+#    figure = next(iter(obj.figures.values()))
+#    a = mpld3.fig_to_html(figure)
+#    print(a)
+    print("+++++++++++++++++")
+#    print(obj.to_json())
+    print(obj.lift_capacity_curve_x.to_tuple())
+    tmp = obj.lift_capacity_curve_x.to_tuple()
+#    print(obj.lift_capacity_curve_x.tolist())
+    tmp2 = (tmp[0].tolist(), tmp[1])
+    tmp3 = obj.lift_capacity_curve_y.to_tuple()
+    tmp4 = (tmp3[0].tolist(), tmp3[1])
+    print(obj.lift_capacity_curve_y.tolist())
+#    print(dir(obj.lift_capacity_curve_x))
+    print()
+    print(str(obj.lift_capacity_curve_x))
+    print("#############################")
     # so:
     #   want the data returned as well, not just a plot
     #   some sort of json format perhaps?
-    img = make_png(next(iter(figure.values())))
-    import base64
-    return base64.b64encode(img).decode("utf-8"), 200
+#    img = make_png(next(iter(figure.values())))
+#    import base64
+#    return base64.b64encode(img).decode("utf-8"), 200
+    print()
+    a = obj.lift_capacity_curve_y.to_tuple()
+    import pickle
+#    serialized = pickle.dump(a, -1)
+    serialized = pickle.dumps(a, -1)
+    print(serialized)
+
+
+
+
+    from flask import jsonify
+
+#   for the below to work, the contents of the class needs to be serializable
+#   this is done by converting the Quantity objects to str
+#   ret = str(quantity)
+#   this should be part of the dataclass somehow
+#   temporarily create a return object
+#   confirmed that client picks up this response
+    obj2 = {
+        "some response": 42,
+        "other response": str(obj.lift_capacity_curve_x),
+        "x": tmp2,
+        "y": tmp4
+    } 
+
+    return jsonify(obj2)
 
 
 # some preparatory work to do at start-up of the web server
