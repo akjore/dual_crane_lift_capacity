@@ -13,9 +13,8 @@ dev_template = "{tag}.post{ccount}"
 line-length = 120
 
 [tool.ruff]
-select = ["A", "B", "D", "E", "F", "I", "N", "Q", "ANN", "ERA", "PTH", "RET", "SIM", "TRY"]
-# select = ["ALL"]
-ignore = ["D203", "D213"]
+lint.select = ["ALL"]
+lint.ignore = ["D203", "D213"]
 line-length = 120
 
 [tool.pytest.ini_options]
