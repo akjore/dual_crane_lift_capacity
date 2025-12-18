@@ -16,6 +16,7 @@ import pytest
 import yaml
 from flask import Flask, Response, jsonify, render_template, request, send_from_directory
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from zoneinfo import ZoneInfo
 
 import dual_crane_lift_capacity.dual_crane_lift
 
@@ -60,7 +61,7 @@ def get_test_status() -> None:
     test_folder = Path(files("dual_crane_lift_capacity")) / TEST_FOLDER
 
     app.jinja_env.globals["TEST_RESULT_FILENAME"] = filename
-    app.jinja_env.globals["TEST_RETCODE"] = pytest.main([test_folder, "--self-contained-html", 
+    app.jinja_env.globals["TEST_RETCODE"] = pytest.main([test_folder, "--self-contained-html",
                                                          f"--html={filename_with_path}"])
     app.logger.debug(f"Pytest result file: {app.jinja_env.globals['TEST_RESULT_FILENAME']}")
     app.logger.debug(f"Pytest return code: {app.jinja_env.globals['TEST_RETCODE']}")
@@ -107,19 +108,18 @@ def prepare_dual_crane_lift_plots(filecontent: str) -> tuple:
     :raises Exception: some error while processing the provided filecontent
     """
     try:
-#        figures = dual_crane_lift_capacity.dual_crane_lift.dual_crane_lift(data=filecontent, interactive=False)
         data_cls = dual_crane_lift_capacity.dual_crane_lift.dual_crane_lift(data=filecontent, interactive=False)
         app.logger.debug(f"Returned with {len(data_cls.figures)} figure(s).")
 
         # grab the data from the plots
         data = []
-        for _k, v in data_cls.figures.items():
+        for v in data_cls.figures.values():
             case = {}
             # assumption! axis 0 contains the main plot
             for line in v.axes[0].get_lines():
                 # any lines containing one or more nans are not of interest - skip
                 if not (np.isnan(line.get_xdata().magnitude).any() or np.isnan(line.get_ydata().magnitude).any()):
-                    case[line.get_label()] = {"x": line.get_xdata().magnitude.tolist(), 
+                    case[line.get_label()] = {"x": line.get_xdata().magnitude.tolist(),
                                               "y": line.get_ydata().magnitude.tolist()}
 
             data.append({v.axes[0].title.get_text(): case})
@@ -133,15 +133,15 @@ def prepare_dual_crane_lift_plots(filecontent: str) -> tuple:
         if len(pngs) == 1:
             # as only one file, write the figure to file as png
             with tempfile.NamedTemporaryFile(suffix=".png", dir=app.config.get(TMP_FOLDER), delete=False) as file_plot:
-                file_plot.write(list(pngs.values())[0])
+                file_plot.write(next(iter(pngs.values())))
                 file_plot.flush()
         else:
             # multiple files -> bundle in a zip file
-            file_plot = tempfile.NamedTemporaryFile(suffix=".zip", dir=app.config.get(TMP_FOLDER), delete=False)
-            with zipfile.ZipFile(file_plot.name, "w") as myzip:
+            with tempfile.NamedTemporaryFile(suffix=".zip", dir=app.config.get(TMP_FOLDER), delete=False) as file_plot,\
+                 zipfile.ZipFile(file_plot.name, "w") as myzip:
                 for case, png in pngs.items():
                     myzip.writestr(case+".png", data=png)
-            file_plot.close()
+
         return Path(file_plot.name).name, Path(file_data.name).name
     except Exception:
         app.logger.exception()
@@ -150,7 +150,7 @@ def prepare_dual_crane_lift_plots(filecontent: str) -> tuple:
 
 @app.route("/", methods=["GET", "POST"])
 @app.route("/dualCraneLift", methods=["GET", "POST"])
-def dual_crane_lift() -> str:
+def dual_crane_lift() -> str:       # noqa: PLR0911
     """Main/default page for dual crane lift app.
 
     :returns
@@ -185,11 +185,11 @@ def dual_crane_lift() -> str:
             return f"Missing key {ex}", 400
         except ValueError as ex:
             return str(ex), 400
-        except Exception as ex:
+        except Exception as ex:     # noqa: BLE001
             return repr(ex), 400
         app.logger.debug(f"Result files created: {retfiles}")
-
-        results = {"datetime": datetime.datetime.now().replace(microsecond=0).isoformat(sep=" "),
+        tzinfo = ZoneInfo("Europe/Berlin")
+        results = {"datetime": datetime.datetime.now(tz=tzinfo).replace(microsecond=0).isoformat(sep=" "),
                    "filename": file.filename,
                    "resultfiles": retfiles}
         app.logger.debug(f"Returning: {results}")
@@ -232,17 +232,17 @@ def crane_curves() -> Response:
 
     # reshape the data to suit the plotting tool
     crane_curves = {}
-    for key, _val in r.items():
+    for key in r:
         key_with_units = f"{key} ({r[key][0].units:~P}, {c[key][0].units:~P})"
-        crane_curves[key_with_units] = list()
+        crane_curves[key_with_units] = []
         for ri, ci in zip(r[key], c[key]):
             crane_curves[key_with_units].append({"x": ri.magnitude, "y": ci.magnitude})
 
     return render_template("crane_curves.html", crane_curves=crane_curves)
 
 
-@app.route("/logger")
-def logger() -> str:
+@app.route("/log")
+def log() -> str:
     """Show log file content."""
     return render_template("logger.html")
 
@@ -277,65 +277,8 @@ def calc_dual_crane_capacity() -> str:
     args = request.args.to_dict()
     case = {"Interactive case": args}
 
-    obj = dual_crane_lift_capacity.dual_crane_lift.dual_crane_lift(data=yaml.dump(case), interactive=False, 
+    return dual_crane_lift_capacity.dual_crane_lift.dual_crane_lift(data=yaml.dump(case), interactive=False,
                                                                    create_plots=False)
-#    obj = dual_crane_lift_capacity.dual_crane_lift.dual_crane_lift(data=yaml.dump(case), interactive=False, 
-#                                                                   create_plots=True)
-
-    print("#############################")
-    print(obj)
-#    import matplotlib.pyplot as plt, mpld3
-#    plt.plot([3,1,4,1,5], 'ks-', mec='w', mew=5, ms=20)
-#    mpld3.show()
-#    print(obj.figures)
-#    figure = next(iter(obj.figures.values()))
-#    a = mpld3.fig_to_html(figure)
-#    print(a)
-    print("+++++++++++++++++")
-#    print(obj.to_json())
-    print(obj.lift_capacity_curve_x.to_tuple())
-    tmp = obj.lift_capacity_curve_x.to_tuple()
-#    print(obj.lift_capacity_curve_x.tolist())
-    tmp2 = (tmp[0].tolist(), tmp[1])
-    tmp3 = obj.lift_capacity_curve_y.to_tuple()
-    tmp4 = (tmp3[0].tolist(), tmp3[1])
-    print(obj.lift_capacity_curve_y.tolist())
-#    print(dir(obj.lift_capacity_curve_x))
-    print()
-    print(str(obj.lift_capacity_curve_x))
-    print("#############################")
-    # so:
-    #   want the data returned as well, not just a plot
-    #   some sort of json format perhaps?
-#    img = make_png(next(iter(figure.values())))
-#    import base64
-#    return base64.b64encode(img).decode("utf-8"), 200
-    print()
-    a = obj.lift_capacity_curve_y.to_tuple()
-    import pickle
-#    serialized = pickle.dump(a, -1)
-    serialized = pickle.dumps(a, -1)
-    print(serialized)
-
-
-
-
-    from flask import jsonify
-
-#   for the below to work, the contents of the class needs to be serializable
-#   this is done by converting the Quantity objects to str
-#   ret = str(quantity)
-#   this should be part of the dataclass somehow
-#   temporarily create a return object
-#   confirmed that client picks up this response
-    obj2 = {
-        "some response": 42,
-        "other response": str(obj.lift_capacity_curve_x),
-        "x": tmp2,
-        "y": tmp4
-    } 
-
-    return jsonify(obj2)
 
 
 # some preparatory work to do at start-up of the web server
@@ -357,7 +300,7 @@ logger_plt.setLevel(logging.ERROR)
 if __name__ == "__main__":
     import logging.config
 
-    def setup_logging(config_file_path: str="../logging.config.yaml", logging_level: str=logging.INFO, 
+    def setup_logging(config_file_path: str="../logging.config.yaml", logging_level: str=logging.INFO,
                       env_key: str="LOG_CFG") -> None:
         """Prepare logging configuration.
 

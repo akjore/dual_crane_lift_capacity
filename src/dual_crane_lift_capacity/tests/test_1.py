@@ -1,19 +1,25 @@
 """Function testing of the package."""
+# ruff: noqa: S101
 import matplotlib.pyplot as plt
 import pytest
 import yaml
-from dual_crane_lift_capacity.dual_crane_lift import dual_crane_lift
-from dual_crane_lift_capacity.input_file_wrapper import DualLiftingCases, MissingFileOrInputDataError
 
-KEYS = ["crane_curve_a", "crane_curve_b", "crane_radius_a", "crane_radius_b", "rigging_weight_a", 
-        "rigging_weight_b", "weight_uncertainty_factor", "cog_uncertainty_factor", "tilt_factor", 
+from dual_crane_lift_capacity.dual_crane_lift import dual_crane_lift
+from dual_crane_lift_capacity.input_file_wrapper import (
+    DimensionalityValueError,
+    DualLiftingCases,
+    MissingFileOrInputDataError,
+)
+
+KEYS = ["crane_curve_a", "crane_curve_b", "crane_radius_a", "crane_radius_b", "rigging_weight_a",
+        "rigging_weight_b", "weight_uncertainty_factor", "cog_uncertainty_factor", "tilt_factor",
         "lift_point_a", "lift_point_b", "weight", "cog"]
-SOME_KEYS = ["crane_radius_a", "crane_radius_b", "rigging_weight_a", "rigging_weight_b", 
-             "weight_uncertainty_factor", "cog_uncertainty_factor", "tilt_factor", "lift_point_a", 
+SOME_KEYS = ["crane_radius_a", "crane_radius_b", "rigging_weight_a", "rigging_weight_b",
+             "weight_uncertainty_factor", "cog_uncertainty_factor", "tilt_factor", "lift_point_a",
              "lift_point_b", "weight", "cog"]
 
 
-@pytest.fixture()
+@pytest.fixture
 def input_sample() -> dict:
     """Sample input data for test purposes."""
     return {"Sample 1": {
@@ -29,7 +35,7 @@ def input_sample() -> dict:
         "lift_point_a": "[43.73 m]",
         "lift_point_b": "[82. m]",
         "weight": "10295 t",
-        "cog": "61.668 m"
+        "cog": "61.668 m",
     }}
 
 
@@ -76,7 +82,7 @@ def test_wrong_dimension(input_sample: dict, key: str) -> None:
     """
     # valid inputs are either lengths, masses, or dimensionless.
     input_sample["Sample 1"][key] = "1 cubic meter"
-    with pytest.raises(ValueError):
+    with pytest.raises(DimensionalityValueError):
         dual_crane_lift(data=yaml.dump(input_sample), interactive=False)
 
 
@@ -84,6 +90,7 @@ def test_no_input() -> None:
     """Check that no or empty input returns an Exception."""
     with pytest.raises(MissingFileOrInputDataError):
         dual_crane_lift(data="", interactive=False)
+
 
 def test_wrong_input() -> None:
     """Check that wrong input returns a TypeError."""

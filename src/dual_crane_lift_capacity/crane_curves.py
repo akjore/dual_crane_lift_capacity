@@ -11,6 +11,8 @@ import yaml
 from . import Q, ureg
 
 logger = logging.getLogger(__name__)
+_crane_radii = None
+_crane_capacities = None
 
 
 def _load_crane_curves() -> str:
@@ -49,8 +51,6 @@ def _check() -> None:
     for crane_curve_id in _crane_curves:
         array = np.array(_crane_curves[crane_curve_id])
 
-        global _crane_radii
-        global _crane_capacities
         _crane_radii[crane_curve_id] = _cnv_str_to_qty(array[:, 0], "crane radius")
         _crane_capacities[crane_curve_id] = _cnv_str_to_qty(array[:, 1], "crane capacity")
 
@@ -63,8 +63,6 @@ def crane_curves() -> tuple:
 
     :returns: a tuple containing the radii and the capacities
     """
-    global _crane_radii
-    global _crane_capacities
     return (_crane_radii, _crane_capacities)
 
 
@@ -75,7 +73,7 @@ def _crane_capacity(curve: str, radius: float) -> float:
         return np.interp(radius, _crane_radii[curve], _crane_capacities[curve], left=np.nan, right=np.nan)
     except KeyError as e:
         logger.exception(f"Crane curve {curve}")
-        raise KeyError() from e
+        raise KeyError from e
     except Exception:
         raise
 

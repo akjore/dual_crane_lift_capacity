@@ -1,12 +1,17 @@
 """Main module for creating lift capacity plots."""
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 
 import matplotlib.axes
 import matplotlib.pyplot as plt
 import numpy as np
-import pint
 
 from . import Q, input_file_wrapper, ureg
+
+if TYPE_CHECKING:
+    import pint
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +21,7 @@ def create_plots(data_cls: input_file_wrapper.DualLiftingCases) -> None:
     logger.debug("Start preparing plots")
     # Create plots
     figures = {}
-    for i in range(0, len(data_cls.cases)):
+    for i in range(len(data_cls.cases)):
         figures[data_cls.cases[i]] = _create_plot(
             data_cls.cases[i],
             data_cls.weight_original_unit[i],
@@ -46,12 +51,12 @@ def create_plots(data_cls: input_file_wrapper.DualLiftingCases) -> None:
 
 
 def _create_plot(
-        case: str, weight: pint.Quantity, cog: pint.Quantity, lift_point_a: pint.Quantity, lift_point_b: pint.Quantity, 
-        crane_radius_a: pint.Quantity, crane_radius_b: pint.Quantity, rigging_weight_a: pint.Quantity, 
-        rigging_weight_b: pint.Quantity, crane_a: str, crane_b: str, crane_capacity_a: pint.Quantity, 
-        crane_capacity_b: pint.Quantity, tilt_factor: float, cog_uncertainty_factor: float, 
-        weight_uncertainty_factor: float, lift_capacity_curve: dict, lift_capacity_at_cog: pint.Quantity, 
-        cog_limit_at_given_weight: pint.Quantity, true_hook_load_a: pint.Quantity, true_hook_load_b: pint.Quantity, 
+        case: str, weight: pint.Quantity, cog: pint.Quantity, lift_point_a: pint.Quantity, lift_point_b: pint.Quantity,
+        crane_radius_a: pint.Quantity, crane_radius_b: pint.Quantity, rigging_weight_a: pint.Quantity,
+        rigging_weight_b: pint.Quantity, crane_a: str, crane_b: str, crane_capacity_a: pint.Quantity,
+        crane_capacity_b: pint.Quantity, tilt_factor: float, cog_uncertainty_factor: float,
+        weight_uncertainty_factor: float, lift_capacity_curve: dict, lift_capacity_at_cog: pint.Quantity,
+        cog_limit_at_given_weight: pint.Quantity, true_hook_load_a: pint.Quantity, true_hook_load_b: pint.Quantity,
         factored_hook_load_a: pint.Quantity, factored_hook_load_b: pint.Quantity) -> plt.Figure:
     """Prepare lift capacity plot for a single case as provided by the inputs, and associated tables.
 
@@ -81,7 +86,7 @@ def _create_plot(
 
     :returns pyplot figure
     """
-    ureg.setup_matplotlib(True)
+    ureg.setup_matplotlib(enable=True)
     plt.rcParams["figure.figsize"] = (11.69, 8.27)      # A4 paper size in inches
     fig = plt.figure(num=case)
 
@@ -107,18 +112,18 @@ def _create_plot(
     plt.scatter(cog, lift_capacity_at_cog, marker=".", linestyle="None", color=colours, label="Weight margin")
 
     # add markers for CoG margin
-    plt.plot(cog_limit_at_given_weight, weight.repeat(2), marker=".", linestyle="None", markeredgecolor="red", 
+    plt.plot(cog_limit_at_given_weight, weight.repeat(2), marker=".", linestyle="None", markeredgecolor="red",
              label="CoG margin")
 
     # add miscellaneous annotations
     _add_annotations(ax, weight, cog_limit_at_given_weight, cog, lift_capacity_at_cog, lift_capacity_curve)
 
-    plt.grid(True)
+    plt.grid(visible=True)
 
     # add info tables
     _add_info_tables(weight, cog, lift_point_a, lift_point_b, crane_radius_a, crane_radius_b, rigging_weight_a,
-                     rigging_weight_b, crane_a, crane_b, crane_capacity_a, crane_capacity_b, true_hook_load_a, 
-                     true_hook_load_b, factored_hook_load_a, factored_hook_load_b, tilt_factor, cog_uncertainty_factor, 
+                     rigging_weight_b, crane_a, crane_b, crane_capacity_a, crane_capacity_b, true_hook_load_a,
+                     true_hook_load_b, factored_hook_load_a, factored_hook_load_b, tilt_factor, cog_uncertainty_factor,
                      weight_uncertainty_factor)
 
     plt.tight_layout()
@@ -137,7 +142,7 @@ def _add_lift_capacity_curve(ax: matplotlib.axes.Axes, curve: dict) -> None:
     h_align = np.append(h_align, np.repeat("left", curve["x"].size / 2))
 
     for (x, y, h) in zip(curve["x"], curve["y"], h_align):
-        ax.annotate("  %d  " % y.to(ax.yaxis.units).magnitude, (x, y), textcoords="data", verticalalignment="center", 
+        ax.annotate(f"  {y.to(ax.yaxis.units).magnitude}  ", (x, y), textcoords="data", verticalalignment="center",
                     horizontalalignment=h)
 
 
@@ -155,12 +160,12 @@ def _add_cog(weight: pint.Quantity, cog: pint.Quantity) -> None:
         plt.plot(cog[1], weight, "go", label="CoG")
 
 
-def _add_info_tables(weight: pint.Quantity, cog: pint.Quantity, lift_point_a: pint.Quantity, 
-                     lift_point_b: pint.Quantity, crane_radius_a: pint.Quantity, crane_radius_b: pint.Quantity, 
-                     rigging_weight_a: pint.Quantity, rigging_weight_b: pint.Quantity, crane_a: str, crane_b: str, 
-                     crane_capacity_a: pint.Quantity, crane_capacity_b: pint.Quantity, true_hook_load_a: pint.Quantity, 
-                     true_hook_load_b: pint.Quantity, factored_hook_load_a: pint.Quantity, 
-                     factored_hook_load_b: pint.Quantity, tilt_factor: float, cog_uncertainty_factor: float, 
+def _add_info_tables(weight: pint.Quantity, cog: pint.Quantity, lift_point_a: pint.Quantity,
+                     lift_point_b: pint.Quantity, crane_radius_a: pint.Quantity, crane_radius_b: pint.Quantity,
+                     rigging_weight_a: pint.Quantity, rigging_weight_b: pint.Quantity, crane_a: str, crane_b: str,
+                     crane_capacity_a: pint.Quantity, crane_capacity_b: pint.Quantity, true_hook_load_a: pint.Quantity,
+                     true_hook_load_b: pint.Quantity, factored_hook_load_a: pint.Quantity,
+                     factored_hook_load_b: pint.Quantity, tilt_factor: float, cog_uncertainty_factor: float,
                      weight_uncertainty_factor: float) -> None:
     # display crane_a & b such that crane with lowest liftpoint is to the left
     crane_a_idx_offset = 0
@@ -168,7 +173,7 @@ def _add_info_tables(weight: pint.Quantity, cog: pint.Quantity, lift_point_a: pi
         crane_a_idx_offset = 2
 
     # Add data table crane A
-    _add_data_table("Crane A", _crane_table(crane_a, crane_radius_a, crane_capacity_a, rigging_weight_a, lift_point_a, 
+    _add_data_table("Crane A", _crane_table(crane_a, crane_radius_a, crane_capacity_a, rigging_weight_a, lift_point_a,
                                             true_hook_load_a, factored_hook_load_a), 0 + crane_a_idx_offset)
 
     # Add data table misc data
@@ -190,11 +195,11 @@ def _add_info_tables(weight: pint.Quantity, cog: pint.Quantity, lift_point_a: pi
     _add_data_table("Lifted object", cell_text, 1)
 
     # Add data table crane B
-    _add_data_table("Crane B", _crane_table(crane_b, crane_radius_b, crane_capacity_b, rigging_weight_b, lift_point_b, 
+    _add_data_table("Crane B", _crane_table(crane_b, crane_radius_b, crane_capacity_b, rigging_weight_b, lift_point_b,
                                             true_hook_load_b, factored_hook_load_b), 2 - crane_a_idx_offset)
 
 
-def _crane_table(crane: str, crane_radius: pint.Quantity, crane_capacity: pint.Quantity, rigging_weight: pint.Quantity, 
+def _crane_table(crane: str, crane_radius: pint.Quantity, crane_capacity: pint.Quantity, rigging_weight: pint.Quantity,
                  lift_point: pint.Quantity, true_hook_load: pint.Quantity, factored_hook_load: pint.Quantity) -> list:
     avg = (np.max(lift_point) + np.min(lift_point)) / 2
     flt = (np.max(lift_point) - np.min(lift_point)) / 2
@@ -212,12 +217,12 @@ def _add_data_table(title: str, cell_text: str, loc_idx: int) -> None:
     ax.set_title(title)
     ax.axis("off")
     tbl = ax.table(cellText=cell_text, loc="best")
-    tbl.auto_set_font_size(False)
+    tbl.auto_set_font_size(value=False)
     tbl.set_fontsize(6)
 
 
 def _add_annotations(
-        ax: matplotlib.axes.Axes, weight: pint.Quantity, cog_limit_at_given_weight: pint.Quantity, 
+        ax: matplotlib.axes.Axes, weight: pint.Quantity, cog_limit_at_given_weight: pint.Quantity,
         cog: pint.Quantity, lift_capacity_at_cog: pint.Quantity, lift_capacity_curve: pint.Quantity) -> None:
     # CoG margins
     if cog.size == 3:
@@ -261,28 +266,28 @@ def _add_annotations(
     if x_min_weight_margin > x_peak[0]:
         x.reverse()
         xcg.reverse()
-    _annotate_point_pair(ax, f"{y_min_weight_margin-weight:~0.0f}", (x[0], weight), (x[0], y_min_weight_margin), 
+    _annotate_point_pair(ax, f"{y_min_weight_margin-weight:~0.0f}", (x[0], weight), (x[0], y_min_weight_margin),
                          ha="left", va="center", color=color)
     _annotate_point_pair(ax, None, (x[0], weight), (xcg[0], weight), arrowprops=arrowprops_dimline)
 
     # this is ok for normal curves, but needs fixing for float
     if x_peak[0] == x_peak[1]:
-        _annotate_point_pair(ax, None, (x[0], y_min_weight_margin), (xcg[0], y_min_weight_margin), 
+        _annotate_point_pair(ax, None, (x[0], y_min_weight_margin), (xcg[0], y_min_weight_margin),
                              arrowprops=arrowprops_dimline)
     else:
-        _annotate_point_pair(ax, None, (x[0], y_min_weight_margin), (x_peak[1], y_min_weight_margin), 
+        _annotate_point_pair(ax, None, (x[0], y_min_weight_margin), (x_peak[1], y_min_weight_margin),
                              arrowprops=arrowprops_dimline)
 
     if cog.size == 3:
-        _annotate_point_pair(ax, f"{lift_capacity_at_cog[1]-weight:~0.0f}", (x[1], weight), 
+        _annotate_point_pair(ax, f"{lift_capacity_at_cog[1]-weight:~0.0f}", (x[1], weight),
                              (x[1], lift_capacity_at_cog[1]), ha="left", va="center", color="green")
         _annotate_point_pair(ax, None, (x[1], weight), (xcg[1], weight), arrowprops=arrowprops_dimline)
-        _annotate_point_pair(ax, None, (x[1], lift_capacity_at_cog[1]), (x_cog, lift_capacity_at_cog[1]), 
+        _annotate_point_pair(ax, None, (x[1], lift_capacity_at_cog[1]), (x_cog, lift_capacity_at_cog[1]),
                              arrowprops=arrowprops_dimline)
 
 
-def _annotate_point_pair(ax: matplotlib.axes.Axes, text: str, xy_start: tuple, xy_end: tuple, xycoords: str="data", 
-                         arrowprops: str=None, ha: str="center", va: str="bottom", color: str="black") -> None:
+def _annotate_point_pair(ax: matplotlib.axes.Axes, text: str, xy_start: tuple, xy_end: tuple, xycoords: str="data",
+                         arrowprops: str|None=None, ha: str="center", va: str="bottom", color: str="black") -> None:
     if arrowprops is None:
         arrowprops = {"arrowstyle": "<->", "shrinkA": 0., "shrinkB": 0., "color": color}
     offset = [0, 5]
@@ -293,5 +298,5 @@ def _annotate_point_pair(ax: matplotlib.axes.Axes, text: str, xy_start: tuple, x
         xy_text = ((xy_start[0] + xy_end[0]) / 2., (xy_start[1] + xy_end[1]) / 2.)
 
         ax.annotate("", xy=xy_end, xycoords=xycoords, xytext=xy_start, textcoords=xycoords, arrowprops=arrowprops)
-        ax.annotate(text=text, xy=xy_text, xycoords=xycoords, xytext=offset, textcoords="offset points", ha=ha, va=va, 
+        ax.annotate(text=text, xy=xy_text, xycoords=xycoords, xytext=offset, textcoords="offset points", ha=ha, va=va,
                     fontsize=7)

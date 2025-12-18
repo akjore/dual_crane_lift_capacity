@@ -14,7 +14,7 @@ line-length = 120
 
 [tool.ruff]
 lint.select = ["ALL"]
-lint.ignore = ["D203", "D213"]
+lint.ignore = ["D203", "D213", "G004", "PLR2004", "PLR0913"]
 line-length = 120
 
 [tool.pytest.ini_options]

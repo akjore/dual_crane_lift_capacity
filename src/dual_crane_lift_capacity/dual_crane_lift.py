@@ -2,7 +2,7 @@
 import logging
 from pathlib import Path
 
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from . import crane_curves, dual_crane_lift_capacity, dual_crane_lift_capacity_plot, input_file_wrapper
@@ -10,7 +10,7 @@ from . import crane_curves, dual_crane_lift_capacity, dual_crane_lift_capacity_p
 logger = logging.getLogger(__name__)
 
 
-def dual_crane_lift(filename: str="", data: str="", interactive: bool=True, create_plots: bool=True) \
+def dual_crane_lift(filename: str="", data: str="", *, interactive: bool=True, create_plots: bool=True) \
         -> input_file_wrapper.DualLiftingCases:
     """Perform one or more dual crane lift calculations and return data to the caller.
 
@@ -23,9 +23,9 @@ def dual_crane_lift(filename: str="", data: str="", interactive: bool=True, crea
     :param interactive:                boolean, default True: whether or not to show the matplotlib plots
     :returns DualLiftingCases:         wrapper class for input data, computed falues and figures
     """
-    logging.getLogger("matplotlib.font_manager").disabled = True
+    logging.getLogger("mpl.font_manager").disabled = True
     if not interactive:
-        matplotlib.use("agg")
+        mpl.use("agg")
 
     data_cls = input_file_wrapper.DualLiftingCases(filename=filename, data=data)
 
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     if args.inputfile:
         try:
             dual_crane_lift(filename=args.inputfile, interactive=True)
-        except Exception as e:
-            logger.error(e, exc_info=True)
+        except Exception:
+            logger.exception()
     else:
         logger.error("No input file specified; quitting.")
