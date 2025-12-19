@@ -44,7 +44,7 @@ jobs:
         git config --global user.email "akjore@outlook.com"
         git config --global user.name "akj"
     - name: Commit and push wheel
-      if: ${{ matrix.python-version == "3.14" }}
+      if: ${{ matrix.python-version == '3.14' }}
       run: |
         git add -f ./dist/*.whl
         git commit -m 'pushing new wheel'
