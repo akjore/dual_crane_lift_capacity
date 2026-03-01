@@ -32,7 +32,14 @@ jobs:
 #    - name: Lint with ruff
 #      run: |
 #        ruff check .
+    - name: Get crane curves
+      env:
+        TOKEN: ${{ secrets.crane_curves_token }}
+      run: |
+        curl -H "Authorization: token ${TOKEN}" https://raw.githubusercontent.com/acct/crane_curves/main/crane_curves.yaml
     - name: Test with pytest
+      env:
+        CRANE_CURVE_FILENAME: "crane_curves.yaml"
       run: |
         pytest
     - name: Build
