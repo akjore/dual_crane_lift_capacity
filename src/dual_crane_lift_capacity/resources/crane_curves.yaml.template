@@ -1,0 +1,6 @@
+vessel1.block1.mode:
+  - [30m, 5000t]
+  - [100m, 50t]
+vessel2.block1.mode:
+  - [30m, 3000t]
+  - [100m, 900t]
