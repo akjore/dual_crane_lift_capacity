@@ -36,7 +36,7 @@ jobs:
       env:
         TOKEN: ${{ secrets.crane_curves_token }}
       run: |
-        curl -H "Authorization: token ${TOKEN}" https://raw.githubusercontent.com/akjore/crane_curves/refs/heads/main/crane_curves.yaml
+        curl -H "Authorization: token ${TOKEN}" https://raw.githubusercontent.com/akjore/crane_curves/refs/heads/main/crane_curves.yaml -o crane_curves.yaml
     - name: Test with pytest
       env:
         CRANE_CURVE_FILENAME: "crane_curves.yaml"
