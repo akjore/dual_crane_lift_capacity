@@ -8,7 +8,7 @@ import matplotlib.axes
 import matplotlib.pyplot as plt
 import numpy as np
 
-from . import Q, input_file_wrapper, ureg
+from . import Q, dual_crane_lift_capacity, lift_cases, ureg
 
 if TYPE_CHECKING:
     import pint
@@ -16,38 +16,39 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def create_plots(data_cls: input_file_wrapper.DualLiftingCases) -> None:
+def create_plots(lift_cases: lift_cases.LiftCases,
+        lift_case_capacities: dual_crane_lift_capacity.DualCraneLiftCapacity) -> dict:
     """Prepare plots for all cases and return to caller."""
     logger.debug("Start preparing plots")
     # Create plots
     figures = {}
-    for i in range(len(data_cls.cases)):
-        figures[data_cls.cases[i]] = _create_plot(
-            data_cls.cases[i],
-            data_cls.weight_original_unit[i],
-            data_cls.cog_original_unit[i],
-            data_cls.lift_point_a[i],
-            data_cls.lift_point_b[i],
-            data_cls.crane_radius_a[i],
-            data_cls.crane_radius_b[i],
-            data_cls.rigging_weight_a[i],
-            data_cls.rigging_weight_b[i],
-            data_cls.crane_curve_a[i],
-            data_cls.crane_curve_b[i],
-            data_cls.crane_capacity_a[i],
-            data_cls.crane_capacity_b[i],
-            data_cls.tilt_factor[i],
-            data_cls.cog_uncertainty_factor[i],
-            data_cls.weight_uncertainty_factor[i],
-            {"x": data_cls.lift_capacity_curve_x[i], "y": data_cls.lift_capacity_curve_y[i]},
-            data_cls.lift_capacity_at_cog[i],
-            data_cls.cog_limit_at_given_weight[i],
-            data_cls.true_hook_load_a[i],
-            data_cls.true_hook_load_b[i],
-            data_cls.factored_hook_load_a[i],
-            data_cls.factored_hook_load_b[i])
+    for i in range(len(lift_cases.cases)):
+        figures[lift_cases.cases[i]] = _create_plot(
+            lift_cases.cases[i],
+            lift_cases.weight_original_unit[i],
+            lift_cases.cog_original_unit[i],
+            lift_cases.lift_point_a[i],
+            lift_cases.lift_point_b[i],
+            lift_cases.crane_radius_a[i],
+            lift_cases.crane_radius_b[i],
+            lift_cases.rigging_weight_a[i],
+            lift_cases.rigging_weight_b[i],
+            lift_cases.crane_curve_a[i],
+            lift_cases.crane_curve_b[i],
+            lift_case_capacities.crane_capacity_a[i],
+            lift_case_capacities.crane_capacity_b[i],
+            lift_cases.tilt_factor[i],
+            lift_cases.cog_uncertainty_factor[i],
+            lift_cases.weight_uncertainty_factor[i],
+            {"x": lift_case_capacities.lift_capacity_curve_x[i], "y": lift_case_capacities.lift_capacity_curve_y[i]},
+            lift_case_capacities.lift_capacity_at_cog[i],
+            lift_case_capacities.cog_limit_at_given_weight[i],
+            lift_case_capacities.true_hook_load_a[i],
+            lift_case_capacities.true_hook_load_b[i],
+            lift_case_capacities.factored_hook_load_a[i],
+            lift_case_capacities.factored_hook_load_b[i])
     logger.debug("Plots prepared.")
-    data_cls.figures = figures
+    return figures
 
 
 def _create_plot(

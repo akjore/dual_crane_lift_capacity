@@ -33,7 +33,7 @@ class MissingFileOrInputDataError(Exception):
 
 
 @dataclasses.dataclass
-class DualLiftingCases:
+class LiftCases:
     """Wrapper class around all provided cases."""
 
     # Input variables
@@ -54,28 +54,14 @@ class DualLiftingCases:
     cog_original_unit: list = None
     cases: list = None
 
-    # Computed variables (done downstream)
-    crane_capacity_a: np.array = None
-    crane_capacity_b: np.array = None
-    lift_capacity_curve_x: np.array = None
-    lift_capacity_curve_y: np.array = None
-    lift_capacity_at_cog: np.array = None
-    cog_limit_at_given_weight: np.array = None
-    true_hook_load_a: np.array = None
-    true_hook_load_b: np.array = None
-    factored_hook_load_a: np.array = None
-    factored_hook_load_b: np.array = None
 
-    figures: dict = None
-
-
-    def __check_dim(self: DualLiftingCases, varstr: pint.Quantity, dim: str) -> None:
+    def __check_dim(self, varstr: pint.Quantity, dim: str) -> None:
         var = getattr(locals()["self"], varstr)
         if not var.check(dim):
             raise DimensionalityValueError(varstr, var.dimensionality, dim)
 
 
-    def __load_data(self: DualLiftingCases, filename: str|None=None, data: str|None=None) -> None:
+    def __load_data(self, filename: str|None=None, data: str|None=None) -> None:
         # Load data, either from file or data provided
         if data:
             logger.debug(f"Loading from string: {data}")
@@ -93,7 +79,7 @@ class DualLiftingCases:
             raise MissingFileOrInputDataError
 
 
-    def __init__(self: DualLiftingCases, filename: str|None=None, data: str|None=None) -> None:
+    def __init__(self, filename: str|None=None, data: str|None=None) -> None:
         """Populate the class properties."""
         self.__load_data(filename=filename, data=data)
 
@@ -159,6 +145,6 @@ class DualLiftingCases:
         self.__check_dim("cog", "[length]")
 
 
-    def __to_array(self: DualLiftingCases, arr: pint.Quantity) -> pint.Quantity:
+    def __to_array(self, arr: pint.Quantity) -> pint.Quantity:
         unit = arr[0].units
         return [s.to(unit).magnitude for s in arr] * unit

@@ -4,10 +4,9 @@ import matplotlib.pyplot as plt
 import pytest
 import yaml
 
-from dual_crane_lift_capacity.dual_crane_lift import dual_crane_lift
-from dual_crane_lift_capacity.input_file_wrapper import (
+from dual_crane_lift_capacity.dual_crane_lift import DualCraneLift
+from dual_crane_lift_capacity.lift_cases import (
     DimensionalityValueError,
-    DualLiftingCases,
     MissingFileOrInputDataError,
 )
 
@@ -44,10 +43,10 @@ def test_valid_input(input_sample: dict) -> None:
 
     :param input_sample: dict representing a valid input file
     """
-    ret = dual_crane_lift(data=yaml.dump(input_sample), interactive=False)
+    ret = DualCraneLift(data=yaml.dump(input_sample))
 
-    assert isinstance(ret, DualLiftingCases)
-    assert isinstance(ret.figures["Sample 1"], plt.Figure)
+    assert isinstance(ret, DualCraneLift)
+    assert isinstance(ret.plots["Sample 1"], plt.Figure)
 
 
 def test_crane_curve(input_sample: dict) -> None:
@@ -58,7 +57,7 @@ def test_crane_curve(input_sample: dict) -> None:
     input_sample["Sample 1"]["crane_curve_a"] = "blabla"
 
     with pytest.raises(KeyError):
-        dual_crane_lift(data=yaml.dump(input_sample), interactive=False)
+        DualCraneLift(data=yaml.dump(input_sample))
 
 
 @pytest.mark.parametrize("key", KEYS)
@@ -70,7 +69,7 @@ def test_missing_parameter(input_sample: dict, key: str) -> None:
     """
     del input_sample["Sample 1"][key]
     with pytest.raises(KeyError):
-        dual_crane_lift(data=yaml.dump(input_sample), interactive=False)
+        DualCraneLift(data=yaml.dump(input_sample))
 
 
 @pytest.mark.parametrize("key", SOME_KEYS)
@@ -83,16 +82,16 @@ def test_wrong_dimension(input_sample: dict, key: str) -> None:
     # valid inputs are either lengths, masses, or dimensionless.
     input_sample["Sample 1"][key] = "1 cubic meter"
     with pytest.raises(DimensionalityValueError):
-        dual_crane_lift(data=yaml.dump(input_sample), interactive=False)
+        DualCraneLift(data=yaml.dump(input_sample))
 
 
 def test_no_input() -> None:
     """Check that no or empty input returns an Exception."""
     with pytest.raises(MissingFileOrInputDataError):
-        dual_crane_lift(data="", interactive=False)
+        DualCraneLift(data="")
 
 
 def test_wrong_input() -> None:
     """Check that wrong input returns a TypeError."""
     with pytest.raises(TypeError):
-        dual_crane_lift(data="abc123:", interactive=False)
+        DualCraneLift(data="abc123:")

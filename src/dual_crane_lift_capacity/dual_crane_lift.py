@@ -1,57 +1,70 @@
 """Main module for dual_crane_lift_capacity package."""
+from __future__ import annotations
+
+import dataclasses
 import logging
 from pathlib import Path
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from . import crane_curves, dual_crane_lift_capacity, dual_crane_lift_capacity_plot, input_file_wrapper
+from . import crane_curves, dual_crane_lift_capacity, dual_crane_lift_capacity_plot, lift_cases
 
+# Configure logger
 logger = logging.getLogger(__name__)
 
 
-def dual_crane_lift(filename: str="", data: str="", *, interactive: bool=True, create_plots: bool=True) \
-        -> input_file_wrapper.DualLiftingCases:
-    """Perform one or more dual crane lift calculations and return data to the caller.
+@dataclasses.dataclass
+class DualCraneLift:
+    """Get the input data, calculate the combined crane capacities, and optionally create plots."""
 
-    1. Based on selected crane curves and lifting radii, gets the cranes' lifting capacities.
-    2. Gets the lift capacity curves and other misc results
-    3. Calls for plots to be generated, and either displays or returns those.
+    lift_cases: lift_cases.LiftCases = None
+    dual_crane_lift_capacity_results: dual_crane_lift_capacity.DualCraneLiftCapacity = None
+    _plots: dict = None
 
-    :param filename: filename containing input data to be processed
-    :param data:                       input data to be processed
-    :param interactive:                boolean, default True: whether or not to show the matplotlib plots
-    :returns DualLiftingCases:         wrapper class for input data, computed falues and figures
-    """
-    logging.getLogger("mpl.font_manager").disabled = True
-    if not interactive:
-        mpl.use("agg")
-
-    data_cls = input_file_wrapper.DualLiftingCases(filename=filename, data=data)
-
-    # Get crane capacities for specified crane curves and radii
-    data_cls.crane_capacity_a = crane_curves.get_crane_capacity(data_cls.crane_curve_a, data_cls.crane_radius_a)
-    data_cls.crane_capacity_b = crane_curves.get_crane_capacity(data_cls.crane_curve_b, data_cls.crane_radius_b)
-
-    dual_crane_lift_capacity.dual_crane_lift_capacity(data_cls)
-
-    # Create plots
-    if create_plots:
-       dual_crane_lift_capacity_plot.create_plots(data_cls)
-
-    if interactive:
-        plt.show()
-        return None
-
-    return data_cls
+    @property
+    def plots(self) -> dict[plt.Figure]:
+        """Return plots - create them if not already done."""
+        if not self._plots:
+            self.plots = dual_crane_lift_capacity_plot.create_plots(self.lift_cases,
+                self.dual_crane_lift_capacity_results)
+        return self._plots
 
 
-def crane_curve_ids() -> list:
-    """Return the list of known crane curve ids.
+    @plots.setter
+    def plots(self, var: dict[plt.Figure]) -> None:
+        self._plots = var
 
-    :returns list of known crane curve ids
-    """
-    return crane_curves.crane_curve_ids()
+
+    def __init__(self, filename: str="", data: str="") -> None:
+        """Perform one or more dual crane lift calculations and return data to the caller.
+
+        1. Based on selected crane curves and lifting radii, gets the cranes' lifting capacities.
+        2. Gets the lift capacity curves and other misc results
+        3. Calls for plots to be generated, and either displays or returns those.
+
+        :param filename: filename containing input data to be processed
+        :param data:                       input data to be processed
+        :param interactive:                boolean, default True: whether or not to show the matplotlib plots
+        :returns DualLiftingCases:         wrapper class for input data, computed falues and figures
+        """
+        logging.getLogger("mpl.font_manager").disabled = True
+
+        # what does this do?
+#        if not interactive:
+#            mpl.use("agg")
+
+        self.lift_cases = lift_cases.LiftCases(filename=filename, data=data)
+
+        self.dual_crane_lift_capacity_results = dual_crane_lift_capacity.DualCraneLiftCapacity(self.lift_cases)
+
+    @property
+    def crane_curve_ids(self) -> list:
+        """Return the list of known crane curve ids.
+
+        :returns list of known crane curve ids
+        """
+        return crane_curves.crane_curve_ids()
 
 
 if __name__ == "__main__":
@@ -90,8 +103,13 @@ if __name__ == "__main__":
 
     if args.inputfile:
         try:
-            dual_crane_lift(filename=args.inputfile, interactive=True)
+            res = DualCraneLift(filename=args.inputfile)
+
+            print("check if plots are created when accessing plots")
+            print(res.plots)
+            for case, plot in res.plots.items():
+                plot.savefig(f"{case}.png")
         except Exception:
-            logger.exception()
+            logger.exception("")
     else:
         logger.error("No input file specified; quitting.")
