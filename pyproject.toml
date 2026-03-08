@@ -1,16 +1,13 @@
 [build-system]
-requires = [ "setuptools>=41", "wheel", "setuptools-git-versioning<2", ]
+requires = [ "setuptools>=41", "wheel", "setuptools-git-versioning", ]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.package-data]
-"*" = ["*.yaml", "*.html", "*.css"]
+"*" = ["*.yaml", "*.html", "*.css", "*.template"]
 
 [tool.setuptools-git-versioning]
 enabled = true
 dev_template = "{tag}.post{ccount}"
-
-[tool.black] 
-line-length = 120
 
 [tool.ruff]
 lint.select = ["ALL"]
@@ -24,18 +21,21 @@ pythonpath = [
 
 [project]
 name = "dual_crane_lift_capacity"
-dynamic = ["version"]
+dynamic = ["version", "dependencies"]
 authors = [
   { name="Arne Kristian Jore", email="akjore@outlook.com" },
 ]
 description = "Prepares lift capacity curves for dual crane lifts"
 readme = "README.md"
 requires-python = ">=3.8"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-]
+license = "MIT"
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[project.scripts]
+# package name = entrypoint
+# dual_crane_lift_capacity = "dual_crane_lift_capacity.__main__:main"
 
 [project.urls]
 "Homepage" = "https://github.com/akjore/dual_crane_lift_capacity"

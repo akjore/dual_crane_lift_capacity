@@ -26,6 +26,8 @@ class DualCraneLiftCapacity:
     true_hook_load_b = None
     factored_hook_load_a = None
     factored_hook_load_b = None
+    factored_lift_weight = None
+    weight_margin = None
 
 
     def __init__(self, lift_cases: lift_cases.LiftCases) -> None:
@@ -73,6 +75,7 @@ class DualCraneLiftCapacity:
         logger.debug(f"cg_max_lift_capacity: {cg_max_lift_capacity}")
 
         lift_factors = lift_cases.weight_uncertainty_factor * lift_cases.cog_uncertainty_factor * lift_cases.tilt_factor
+        self.factored_lift_weight = lift_cases.weight * lift_factors
 
         # Determine the lift capacity for the CoG / CoG envelope
         self.lift_capacity_at_cog = self.__lift_capacity(lift_cases.cog, cg_max_lift_capacity, self.crane_capacity_a,
@@ -101,6 +104,9 @@ class DualCraneLiftCapacity:
         self.factored_hook_load_a, self.factored_hook_load_b = self.__hook_loads(lift_cases.weight,
             lift_cases.lift_point_a, lift_cases.lift_point_b, lift_cases.cog, lift_cases.rigging_weight_a,
             lift_cases.rigging_weight_b, lift_factors)
+
+        # Calculate the weight margin
+        self.weight_margin = self.lift_capacity_at_cog - lift_cases.weight
 
 
     def __hook_loads(self, weight: pint.Quantity, lift_point_a: pint.Quantity, lift_point_b: pint.Quantity,
