@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<!--
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+	-->
+	<!-- Load stylesheet -->
+    <!--- <link rel="stylesheet" href="styles.css"> -->
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+    <!-- Load Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.29.0/full/pyodide.js"></script>
+
+    <!-- Load chart.js and relevant plugins -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+
+    <!-- Load .js file to handle gui and interaction with pyodide -->
+    <!--<script type="module" src="single_case.js"></script> -->
+	<script type="module" src="{{ url_for('static', filename='js/single_case.js') }}"></script>
+
+</head>
+
+<body>
+	<!-- Overlay: advise user that page is loading -->
+	<div id="overlay">
+	    <p>Loading, please wait...</p>
+	</div>
+
+	<div class="container">
+  		<div class="header">
+        		<h1>Dual crane lift calculation</h1>
+<!--        <p>Dual lift assessment - for internal use only</p> -->
+		</div>
+		<div class="input_panel">
+	        <form id="form_dualcranelift">
+				<div class="section">
+					<div class="section_container">
+						<div class="input_row2col">
+							<label class="section-title--inline" for="case">Case:</label>
+							<input class="case" id="case" name="case" type="text" value="Sample" />
+						</div>
+					</div>
+				</div>
+
+				<div class="section">
+					<div class="section_container">
+						<div class="input_row input_row--header">
+  							<h2 class="section-title">Crane</h2>
+  							<span class="col-head">Crane A</span>
+						  	<span class="col-head"></span>
+  							<span class="col-head">Crane B</span>
+						</div>
+						<div class="input_row2col">
+							<label for="crane_curve_a">Crane curve:</label>
+							<div class="center_content">
+								<select name="crane_curve_a" id="crane_curve_a" class="select"></select>
+							</div>
+						</div>
+						<div class="input_row">
+							Distance between crane centres [m]:
+							<span></span>
+							<span class="computed" id="distance_between_crane_centres">&nbsp;</span>
+						</div>
+						<div class="input_row">
+							<label for="crane_radius_a">Crane radii [m]:</label>
+							<input id="crane_radius_a" name="crane_radius_a" type="number" min="0" value="50" />
+							<span></span>
+							<input id="crane_radius_b" name="crane_radius_b" type="number" min="0" value="50" />
+						</div>
+						<div class="input_row">
+							<label for="slew_angle_a">Slew angle [deg]:</label>
+							<input id="slew_angle_a" name="slew_angle_a" type="number" min="0" value="" />
+							<span></span>
+							<input id="slew_angle_b" name="slew_angle_b" type="number" min="0" value="" />
+						</div>
+						<div class="input_row">
+							Single crane capacity (incl. DAF=1.1) [t]:
+							<span class="computed" id="crane_capacity_a">&nbsp;</span>
+							<span></span>
+							<span class="computed" id="crane_capacity_b">&nbsp;</span>
+						</div>
+						<div class="input_row">
+							Spare capacity [t]:
+							<span class="computed" id="spare_capacity_a">&nbsp;</span>
+							<span></span>
+							<span class="computed" id="spare_capacity_b">&nbsp;</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="section">
+					<h2 class="section-title">Lift factors</h2>
+					<div class="section_container">
+						<div class="input_row">
+							<label for="weight_uncertainty_factor">Weight uncertainty factor:</label>
+							<span></span>
+							<input id="weight_uncertainty_factor" name="weight_uncertainty_factor" type="number" value="1.015" />
+							<span></span>
+						</div>
+						<div class="input_row">
+							<label for="cog_uncertainty_factor">CoG uncertainty factor:</label>
+							<span></span>
+							<input id="cog_uncertainty_factor" name="cog_uncertainty_factor" type="number" value="1.01" />
+							<span></span>
+						</div>
+						<div class="input_row">
+							<label for="tilt_factor">Tilt factor:</label>
+							<span></span>
+							<input id="tilt_factor" name="tilt_factor" type="number" value="1.02" />
+							<span></span>
+						</div>
+					</div>
+				</div>
+
+				<div class="section">
+					<h2 class="section-title">Module</h2>
+					<div class="section_container">
+						<div class="input_row">
+							<label for="weight">Module lift weight [t]:</label>
+							<span></span>
+							<input id="weight" name="weight" type="number" value="10375" />
+							<span></span>
+						</div>
+						<div class="input_row">
+							Factored lift weight [t]:
+							<span></span>
+							<span class="computed" id="factored_lift_weight">&nbsp;</span>
+							<span></span>
+						</div>
+						<div class="input_row">
+							<label for="rigging_weight_a">Rigging weight [t]:</label>
+							<input id="rigging_weight_a" name="rigging_weight_a" type="number" value="380" />
+							<span class="computed" id="combined_rigging_weight">&nbsp;</span>
+							<input id="rigging_weight_b" name="rigging_weight_b" type="number" value="495" />
+						</div>
+						<div class="input_row">
+							<label for="lift_point_a">Lift points [m]:</label>
+							<input id="lift_point_a" name="lift_point_a" type="number" value="41.050" />
+							<span></span>
+							<input id="lift_point_b" name="lift_point_b" type="number" value="82" />
+						</div>
+						<div class="input_row">
+							<label for="float_a">Float (+/-) [m]:</label>
+							<input id="float_a" name="float_a" type="number" value="0" />
+							<span></span>
+							<input id="float_b" name="float_b" type="number" value="0" />
+						</div>
+						<div class="input_row">
+							<label for="cog">CoG [m]:</label>
+							<span></span>
+							<input id="cog" name="cog" type="number" value="61.646" />
+							<span></span>
+						</div>
+						<div class="input_row">
+							<label for="module_cog_offset_a">Module CoG offset [t]:</label>
+							<input id="module_cog_offset_a" name="module_cog_offset_a" type="number" value="0.5" />
+							<span></span>
+							<input id="module_cog_offset_b" name="module_cog_offset_b" type="number" value="0.5" />
+						</div>
+						<div class="input_row">
+							Distance from CoG to lift point [m]:
+							<span class="computed distance" id="distance_cog_a">&nbsp;</span>
+							<span class="computed distance" id="distance_cog_ab">&nbsp;</span>
+							<span class="computed distance" id="distance_cog_b">&nbsp;</span>
+						</div>
+					</div>
+				</div>
+
+				<div class="section">
+					<div class="section_container">
+						<div class="input_row2col">
+							<span class="weight_margin">Module weight margin [t]:</span>
+							<span class="weight_margin computed" id="module_weight_margin" aria-live="polite"></span>
+						</div>
+					</div>
+				</div>
+
+				<div class="section">
+					<h2 class="section-title">Details</h2>
+					<div class="section_container">
+						<div class="input_row">
+							Distance from CoG to lift point [m]:
+							<span class="computed distance" id="distance_cog_lpa">&nbsp;</span>
+							<span class="computed distance" id="total_distance_cog_lp">&nbsp;</span>
+							<span class="computed distance" id="distance_cog_lpb">&nbsp;</span>
+						</div>
+						<div class="input_row">
+							Slew angle [deg]:
+							<span class="computed" id="slew_angle_a_res">&nbsp;</span>
+							<span></span>
+							<span class="computed" id="slew_angle_b_res">&nbsp;</span>
+						</div>
+						<div class="input_row">
+							Effective lift radius [m]:
+							<span class="computed distance" id="effective_lift_radius_a">&nbsp;</span>
+							<span></span>
+							<span class="computed distance" id="effective_lift_radius_b">&nbsp;</span>
+						</div>
+						<div class="input_row">
+							Distance, CoG A offs to lift point [m]:
+							<span class="computed distance" id="distance_coga_a">&nbsp;</span>
+							<span class="computed distance" id="distance_coga_ab">&nbsp;</span>
+							<span class="computed distance" id="distance_coga_b">&nbsp;</span>
+						</div>
+						<div class="input_row">
+							Distance, CoG B offs to lift point [m]:
+							<span class="computed distance" id="distance_cogb_a">&nbsp;</span>
+							<span class="computed distance" id="distance_cogb_ab">&nbsp;</span>
+							<span class="computed distance" id="distance_cogb_b">&nbsp;</span>
+						</div>
+						<div class="input_row">
+							True hook load, CoG A offset [t]:
+							<span class="computed" id="true_hook_load_a_cog_a">&nbsp;</span>
+							<span class="computed" id="total_true_hook_load_cog_a">&nbsp;</span>
+							<span class="computed" id="true_hook_load_b_cog_a">&nbsp;</span>
+						</div>
+						<div class="input_row">
+							True hook load, CoG B offset [t]:
+							<span class="computed" id="true_hook_load_a_cog_b">&nbsp;</span>
+							<span class="computed" id="total_true_hook_load_cog_b">&nbsp;</span>
+							<span class="computed" id="true_hook_load_b_cog_b">&nbsp;</span>
+						</div>
+						<div class="input_row">
+							Factored hook load, CoG A offset [t]:
+							<span class="computed" id="factored_hook_load_a_cog_a">&nbsp;</span>
+							<span class="computed" id="total_factored_hook_load_cog_a">&nbsp;</span>
+							<span class="computed" id="factored_hook_load_b_cog_a">&nbsp;</span>
+						</div>
+						<div class="input_row">
+							Factored hook load, CoG B offset [t]:
+							<span class="computed" id="factored_hook_load_a_cog_b">&nbsp;</span>
+							<span class="computed" id="total_factored_hook_load_cog_b">&nbsp;</span>
+							<span class="computed" id="factored_hook_load_b_cog_b">&nbsp;</span>
+						</div>
+					</div>
+				</div>
+	        </form>
+		</div>
+		<div class="chart_panel">
+			<canvas id="capacity_chart"></canvas>
+		</div>
+	</div>
+</body>
+</html>

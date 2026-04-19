@@ -1,0 +1,249 @@
+body {
+    font-family: Futura, Trebuchet MS, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f9;
+    color: #333;
+}
+
+header {
+    text-align: center;
+    background-color: #eef1f6;
+    color: #1f2a37;
+    padding: 20px;
+}
+
+main {
+    padding: 20px;
+}
+
+form {
+    margin-bottom: 20px;
+}
+
+#fib-result {
+    font-size: 1.2em;
+    color: #008080;
+    margin-top: 10px;
+}
+
+/* ========== Layout frame ========== */
+@page { size: A4 landscape; margin: 12mm; }
+
+.header h1 {
+  margin: 20;
+  font-weight: 700;
+}
+
+.container {
+  display: grid;
+  grid-template-areas:
+    "header header"
+    "input_panel chart_panel"
+    "footer footer";
+  grid-template-columns: 1fr 3fr;
+  gap: 3px;
+  padding: 3px;
+}
+
+.container div { background-color: #f4f4f9; }
+
+.container .header {
+  grid-area: header;
+  text-align: center;
+  border-bottom: 1px solid #d8dbe3;
+}
+
+.container .input_panel {
+  grid-area: input_panel;
+  width: 480px;
+  border: 1px solid #d8dbe3;
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 10pt;
+  color: #5F6470;
+}
+
+.container .chart_panel {
+  grid-area: chart_panel;
+  width: 900px;
+  height: 600px;
+  padding-top: 12px;
+  padding-left: 16px;
+}
+
+/* ========== Typography ========== */
+h2 {
+  font-size: 10pt;
+  color: #5F6470;
+  font-weight: bold;
+  margin-top: 24px;
+}
+
+.section-title {
+  margin-top: 24px;
+  margin-bottom: 4px;   /* tighter rhythm */
+  font-size: 12pt;
+  font-weight: 700;
+  color: #1F2A37;
+  line-height: 1.2;
+}
+
+.section-title--inline {
+  font-size: 12pt;
+  font-weight: 700;
+  color: #1F2A37;
+  line-height: 1.2;
+  margin: 0;            /* inline use: no vertical margins */
+  align-self: center;
+}
+
+.section { margin-top: 24px; }
+
+.input_row--header .section-title {
+  margin: 0;
+  font-size: 12pt;
+  color: #1F2A37;
+  font-weight: 700;
+}
+
+.col-head {
+  font-weight: 600;
+  color: #1F2A37;
+  text-align: center;
+  align-self: end;
+}
+
+/* ========== Grids for rows ========== */
+/* 4-column rows: label + A + Common + B */
+.input_row {
+  --cell: 64px;
+  display: grid;
+  grid-template-columns: 1fr var(--cell) var(--cell) var(--cell);
+  column-gap: 4px;
+  align-items: center;
+  margin-bottom: 4px;
+  width: 100%;
+}
+
+/* 2-column rows: label + wide field (Case, dropdown, margin) */
+.input_row2col {
+  /* Make label fit its text and keep the field a stable width */
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  column-gap: 6px;
+  align-items: center;
+  margin-bottom: 4px;
+  width: 100%;
+}
+
+/* In 2-col rows, keep label snug at right edge; center the field */
+.input_row2col > label,
+.input_row2col > span:not(.computed) {
+  justify-self: start;
+  text-align: left;
+  line-height: 1.0;            /* tighter label-to-field link */
+}
+.input_row2col > * { justify-self: center; }
+
+/* Make the dropdown wrapper transparent to the grid so the <select> can center */
+.center_content { display: contents; }
+
+/* ========== Controls: inputs, selects, computed ========== */
+input,
+.input_row .computed,
+.input_row2col .computed {
+  height: 20px;
+  line-height: 20px;
+  padding: 1px 2px;
+  box-sizing: border-box;
+  text-align: center;           /* center text inside */
+}
+
+/* Small numeric inputs in the 64px columns (and keep them centered) */
+.input_row > input {
+  width: 64px;
+  justify-self: center;         /* center the element in its grid cell */
+}
+
+/* Case input + selects (in the 200px column) */
+input.case {
+  width: 200px;
+  padding: 1px 4px;
+}
+select,
+select option {
+  width: 200px;
+  text-align: center;
+}
+
+/* Computed value boxes (uniform look + fixed width) */
+.computed {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+
+  width: 64px !important;
+  min-width: 64px !important;
+  height: 20px;
+
+  padding: 1px 2px;
+  box-sizing: border-box;
+  text-align: center;
+
+  background: #f6f7fb;
+  border: 1px solid #d6d6de;
+  border-radius: 6px;
+}
+
+/* Module weight margin badge – keep centered in its column */
+#module_weight_margin { justify-self: center; }
+
+/* ========== Weight margin color states ========== */
+.weight_margin {
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 12pt;
+  font-weight: 600;
+}
+.weight_margin--negative {
+  background: #fcebec;
+  color: #b73535;
+  border-color: #e6b1b1;
+}
+.weight_margin--positive {
+  background: #eef9f3;
+  color: #2d7544;
+  border-color: #b7e2c8;
+}
+
+/* ========== Focus ========== */
+input:focus,
+select:focus {
+  outline: 2px solid rgba(245,166,35,.25);
+  border-color: #f5a623;
+}
+
+.section:last-of-type {
+    margin-top: 12px;
+}
+
+.input_row2col:first-of-type .section-title--inline {
+    margin-top: 4px;
+}
+
+/* ========== Overlay during initial loading ========== */
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent background */
+    color: white; /* Text color */
+    display: flex; /* Center the text */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    z-index: 1000; /* Ensure it is on top */
+    visibility: hidden; /* Hidden by default */
+}
