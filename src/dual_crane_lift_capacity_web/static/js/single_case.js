@@ -780,3 +780,75 @@ var chart = initializeChart();
 // Allow form elements to update calcs
 window.updateCalcs = updateCalcs;
 
+const toggle = document.getElementById('detailsToggle');
+const section = document.getElementById('detailsSection');
+
+function toggleDetails() {
+    const isHidden = section.hidden;
+    section.hidden = !isHidden;
+    toggle.classList.toggle('expanded', isHidden);
+}
+
+toggle.addEventListener('click', toggleDetails);
+
+// keyboard accessibility
+toggle.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleDetails();
+    }
+});
+
+const loadBtn   = document.getElementById('loadYamlBtn');
+const dropZone  = document.getElementById('loadYamlDropZone');
+const fileInput = document.getElementById('yamlFileInput');
+
+/* ---------- Click: open file picker ---------- */
+loadBtn.addEventListener('click', () => {
+    fileInput.click();
+});
+
+/* ---------- File chosen via picker ---------- */
+fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    await handleYamlFile(file);
+    fileInput.value = ''; // allow re-upload of same file
+});
+
+/* ---------- Drag & drop ---------- */
+dropZone.addEventListener('dragover', e => {
+    e.preventDefault();           // required
+    dropZone.classList.add('drag-over');
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('drag-over');
+});
+
+dropZone.addEventListener('drop', async e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+
+    await handleYamlFile(file);
+});
+
+async function handleYamlFile(file) {
+    if (!file.name.match(/\.ya?ml$/i)) {
+        alert('Please select a .yaml or .yml file');
+        return;
+    }
+
+    const text = await file.text();
+
+  // --- Next steps live HERE ---
+  // 1) parse YAML
+  // 2) validate schema
+  // 3) populate case dropdown
+  // 4) select first case
+
+    loadYamlCases(text, file.name);
+}

@@ -10,7 +10,6 @@
     <meta http-equiv="Expires" content="0">
 	-->
 	<!-- Load stylesheet -->
-    <!--- <link rel="stylesheet" href="styles.css"> -->
 	<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 
     <!-- Load Pyodide -->
@@ -22,7 +21,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
 
     <!-- Load .js file to handle gui and interaction with pyodide -->
-    <!--<script type="module" src="single_case.js"></script> -->
 	<script type="module" src="{{ url_for('static', filename='js/single_case.js') }}"></script>
 
 </head>
@@ -41,12 +39,22 @@
 		<div class="input_panel">
 	        <form id="form_dualcranelift">
 				<div class="section">
-					<div class="section_container">
-						<div class="input_row2col">
-							<label class="section-title--inline" for="case">Case:</label>
-							<input class="case" id="case" name="case" type="text" value="Sample" />
+  					<div class="section_container">
+						<div class="input_row_case">
+  							<label class="section-title--inline" for="case">Case:</label>
+	  						<select id="case" name="case" class="case-select">
+    							<option value="Sample" selected>Sample</option>
+  							</select>
+
+							<div id="loadYamlDropZone" class="case-load-zone">
+  								<button type="button" id="loadYamlBtn" class="case-load-icon" aria-label="Load cases" title="Load cases from YAML file">
+    								📂
+  								</button>
+
+  								<input type="file" id="yamlFileInput" accept=".yaml,.yml" hidden/>
+							</div>
 						</div>
-					</div>
+  					</div>
 				</div>
 
 				<div class="section">
@@ -57,11 +65,13 @@
 						  	<span class="col-head"></span>
   							<span class="col-head">Crane B</span>
 						</div>
-						<div class="input_row2col">
-							<label for="crane_curve_a">Crane curve:</label>
-							<div class="center_content">
-								<select name="crane_curve_a" id="crane_curve_a" class="select"></select>
-							</div>
+						<div class="input_row">
+  							<label for="crane_curve_a">Crane curve:</label>
+							<select id="crane_curve_a" name="crane_curve_a" class="wide-select"></select>
+
+  							<span></span>
+  							<span></span>
+  							<span></span>
 						</div>
 						<div class="input_row">
 							Distance between crane centres [m]:
@@ -175,15 +185,24 @@
 
 				<div class="section">
 					<div class="section_container">
-						<div class="input_row2col">
-							<span class="weight_margin">Module weight margin [t]:</span>
-							<span class="weight_margin computed" id="module_weight_margin" aria-live="polite"></span>
+						<div class="input_row">
+    						<span class="weight_margin">Module weight margin [t]:</span>
+
+    						<span></span>
+    						<span class="weight_margin computed" id="module_weight_margin" aria-live="polite"></span>
+    						<span></span>
+    						<span></span>
 						</div>
 					</div>
 				</div>
 
-				<div class="section">
-					<h2 class="section-title">Details</h2>
+				<h2 class="section-title details-header">
+    				<span class="details-toggle" id="detailsToggle" aria-label="Toggle details" role="button"tabindex="0">
+						▶
+    				</span>
+    				<span class="details-title">Details</span>
+				</h2>
+				<div class="details-section" id="detailsSection" hidden>
 					<div class="section_container">
 						<div class="input_row">
 							Distance from CoG to lift point [m]:
