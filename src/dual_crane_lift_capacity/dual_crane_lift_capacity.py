@@ -2,11 +2,12 @@
 import dataclasses
 import logging
 
+#import json
+import simplejson
 import numpy as np
 import pint
 
 from . import lift_cases, ureg
-from .crane_curves import CraneCurves
 
 logger = logging.getLogger(__name__)
 
@@ -15,19 +16,209 @@ logger = logging.getLogger(__name__)
 class DualCraneLiftCapacity:
     """Determine and return the lift capacity curve."""
 
-    crane_curves = None
-    crane_capacity_a = None
-    crane_capacity_b = None
-    lift_capacity_at_cog = None
-    cog_limit_at_given_weight = None
-    lift_capacity_curve_x = None
-    lift_capacity_curve_y = None
-    true_hook_load_a = None
-    true_hook_load_b = None
-    factored_hook_load_a = None
-    factored_hook_load_b = None
-    factored_lift_weight = None
-    weight_margin = None
+    max_lift_capacity: np.array
+    factored_lift_weight: np.array
+    lift_capacity_at_cog: np.array
+    lift_capacity_at_cog_envelope: np.array
+    cog_limits_at_given_weight: np.array
+    lift_capacity_curve_x: np.array
+    lift_capacity_curve_y: np.array
+    true_hook_load_a: np.array
+    true_hook_load_b: np.array
+    factored_hook_load_a: np.array
+    factored_hook_load_b: np.array
+    factored_lift_weight: np.array
+    weight_margin_cog_and_env: np.array        # margins for each end of the cog envelope and the cog
+    weight_margin: np.array                    # overall weight margin, i.e. min of weight_margin
+    spare_capacity_a: np.array
+    spare_capacity_b: np.array
+
+
+    @property
+    def combined_true_hookload(self):
+        """Return sum of true hookloads."""
+        if self.true_hook_load_a is not None and self.true_hook_load_b is not None:
+            return self.true_hook_load_a + self.true_hook_load_b
+        return None
+
+
+    @property
+    def combined_true_hookload_cog_offset_towards_a(self):
+        """Return sum of true hookloads when CoG is shifted towards Crane A."""
+        res = self.combined_true_hookload
+        if res is not None:
+            return res[:, 0]
+        return None
+
+
+    @property
+    def combined_true_hookload_cog_offset_towards_b(self):
+        """Return sum of true hookloads when CoG is shifted towards Crane B."""
+        res = self.combined_true_hookload
+        if res is not None:
+            return res[:, 1]
+        return None
+
+
+    @property
+    def combined_factored_hookload(self):
+        """Return sum of factored hookloads."""
+        if self.factored_hook_load_a is not None and self.factored_hook_load_b is not None:
+            return self.factored_hook_load_a + self.factored_hook_load_b
+        return None
+
+
+    @property
+    def combined_factored_hookload_cog_offset_towards_a(self):
+        """Return sum of factored hookloads when CoG is shifted towards Crane A."""
+        res = self.combined_factored_hookload
+        if res is not None:
+            return res[:, 0]
+        return None
+
+
+    @property
+    def combined_factored_hookload_cog_offset_towards_b(self):
+        """Return sum of factored hookloads when CoG is shifted towards Crane B."""
+        res = self.combined_factored_hookload
+        if res is not None:
+            return res[:, 1]
+        return None
+
+
+    @property
+    def true_hookload_a_with_cog_offset_towards_a(self):
+        """Return true hookload in Crane A with CoG offset shifted towards Crane A."""
+        if self.true_hook_load_a is not None:
+            return self.true_hook_load_a[:, 0]
+
+
+    @property
+    def true_hookload_b_with_cog_offset_towards_a(self):
+        """Return true hookload in Crane B with CoG offset shifted towards Crane A."""
+        if self.true_hook_load_b is not None:
+            return self.true_hook_load_b[:, 0]
+
+
+    @property
+    def true_hookload_a_with_cog_offset_towards_b(self):
+        """Return true hookload in Crane A with CoG offset shifted towards Crane B."""
+        if self.true_hook_load_a is not None:
+            return self.true_hook_load_a[:, 1]
+
+
+    @property
+    def true_hookload_b_with_cog_offset_towards_b(self):
+        """Return true hookload in Crane B with CoG offset shifted towards Crane B."""
+        if self.true_hook_load_b is not None:
+            return self.true_hook_load_b[:, 1]
+
+
+    @property
+    def factored_hookload_a_with_cog_offset_towards_a(self):
+        """Return factored hookload in Crane A with CoG offset shifted towards Crane A."""
+        if self.factored_hook_load_a is not None:
+            return self.factored_hook_load_a[:, 0]
+
+
+    @property
+    def factored_hookload_b_with_cog_offset_towards_a(self):
+        """Return factored hookload in Crane B with CoG offset shifted towards Crane A."""
+        if self.factored_hook_load_b is not None:
+            return self.factored_hook_load_b[:, 0]
+
+
+    @property
+    def factored_hookload_a_with_cog_offset_towards_b(self):
+        """Return factored hookload in Crane A with CoG offset shifted towards Crane B."""
+        if self.factored_hook_load_a is not None:
+            return self.factored_hook_load_a[:, 1]
+
+
+    @property
+    def factored_hookload_b_with_cog_offset_towards_b(self):
+        """Return factored hookload in Crane B with CoG offset shifted towards Crane B."""
+        if self.factored_hook_load_b is not None:
+            return self.factored_hook_load_b[:, 1]
+
+
+    @property
+    def distance_lift_point_a_to_cog(self):
+        """Return the distance from lift point a to the CoG for all lift cases."""
+        return self._lift_cases.distance_lift_point_a_to_cog
+
+
+    @property
+    def distance_lift_point_b_to_cog(self):
+        """Return the distance from lift point a to the CoG for all lift cases."""
+        return self._lift_cases.distance_lift_point_b_to_cog
+
+
+    @property
+    def distance_lift_point_a_to_lift_point_b(self):
+        """Return the distance from lift point a to lift point b for all lift cases."""
+        return self._lift_cases.distance_lift_point_a_to_lift_point_b
+
+
+    @property
+    def combined_rigging_weight(self):
+        """Return the sum of the rigging weights for cranes a and b for all lift cases."""
+        return self._lift_cases.combined_rigging_weight
+
+
+    @property
+    def distance_lift_point_a_to_cog_offset_towards_a(self):
+        """Return the distance from lift point a to end a of the CoG envelope for all lift cases."""
+        return self._lift_cases.distance_lift_point_a_to_cog_offset_towards_a
+
+
+    @property
+    def distance_lift_point_a_to_cog_offset_towards_b(self):
+        """Return the distance from lift point a to end b of the CoG envelope for all lift cases."""
+        return self._lift_cases.distance_lift_point_a_to_cog_offset_towards_b
+
+
+    @property
+    def distance_lift_point_b_to_cog_offset_towards_a(self):
+        """Return the distance from lift point b to end a of the CoG envelope for all lift cases."""
+        return self._lift_cases.distance_lift_point_b_to_cog_offset_towards_a
+
+
+    @property
+    def distance_lift_point_b_to_cog_offset_towards_b(self):
+        """Return the distance from lift point b to end b of the CoG envelope for all lift cases."""
+        return self._lift_cases.distance_lift_point_b_to_cog_offset_towards_b
+
+
+    def to_json(self):
+        """Return results as a json formatted string."""
+        def cnv_quantity(val):
+            if isinstance(val, pint.Quantity):
+                val, unit = val.magnitude, val.units
+                if isinstance(val, np.ndarray):
+                    val = val.tolist()
+                return {"value": val, "unit": f"{unit:~P}"}
+            if isinstance(val, list):
+                return [cnv_quantity(a) for a in val]
+            return val
+
+        # Create a list of all dataclass variables and manually created properties
+        v = vars(self) | {name: getattr(self, name) for name, attr in self.__class__.__dict__.items() if isinstance(attr, property)}
+        del v["_lift_cases"]
+
+        results = [dict(zip(v.keys(), (cnv_quantity(li) for li in l))) for l in zip(*v.values())]
+
+        # temporary : NaNs
+        #del results[0]["distance_lift_point_a_to_cog_offset_towards_a"]
+        #del results[0]["distance_lift_point_a_to_cog_offset_towards_b"]
+        #del results[0]["distance_lift_point_b_to_cog_offset_towards_a"]
+        #del results[0]["distance_lift_point_b_to_cog_offset_towards_b"]
+        # end temporary
+
+        # print("json.dumps:")
+        # print(json.dumps(results, indent=4))
+#        return json.dumps(results)
+        return simplejson.dumps(results, ignore_nan=True)
 
 
     def __init__(self, lift_cases: lift_cases.LiftCases) -> None:
@@ -51,62 +242,73 @@ class DualCraneLiftCapacity:
                     crane_capacity_a - lifting capacity of crane a
                     crane_capacity_b - lifting capacity of crane b
 
-        :returns a dictionary with the following
+        :returns
             Lift capacity curve
             Lift capacity at centre of gravity
             CoG limits at given module weight (mass)
             True hook loads
             Factored hook loads
         """
-        # Get crane capacities for specified crane curves and radii
-        self.crane_curves = CraneCurves()
+        # Store a copy of the lift cases provided as input
+        self._lift_cases = lift_cases
 
-        self.crane_capacity_a = self.crane_curves.crane_capacity(lift_cases.crane_curve_a, lift_cases.crane_radius_a)
-        self.crane_capacity_b = self.crane_curves.crane_capacity(lift_cases.crane_curve_b, lift_cases.crane_radius_b)
+        # For input purposes, CoGs and CoG envelopes are separated. However for calculations there is no need for distinction.
+        # Create a combined array with CoG and CoG envelopes.
+        # stack left edge of CoG envelope, cog, then right edge of CoG envelope
+        cogs = np.stack((lift_cases.cog_envelope[:,0], lift_cases.cog, lift_cases.cog_envelope[:,1]), axis=-1)
 
-        self.max_lift_capacity = (self.crane_capacity_a + self.crane_capacity_b - lift_cases.rigging_weight_a -
+        self.max_lift_capacity = (lift_cases.crane_capacity_a + lift_cases.crane_capacity_b - lift_cases.rigging_weight_a -
                          lift_cases.rigging_weight_b)
 
         # follows from moment equilibrium
-        l_b = ((self.crane_capacity_a - lift_cases.rigging_weight_a) / self.max_lift_capacity)[:, None] * \
-            (lift_cases.lift_point_b - lift_cases.lift_point_a)
+        l_b = ((lift_cases.crane_capacity_a - lift_cases.rigging_weight_a) / self.max_lift_capacity)[:, None] * \
+            (lift_cases.lift_point_b_wfloat - lift_cases.lift_point_a_wfloat)
 
-        cg_max_lift_capacity = (lift_cases.lift_point_b - l_b)
-        logger.debug(f"cg_max_lift_capacity: {cg_max_lift_capacity}")
+        cg_max_lift_capacity = (lift_cases.lift_point_b_wfloat - l_b)
 
         lift_factors = lift_cases.weight_uncertainty_factor * lift_cases.cog_uncertainty_factor * lift_cases.tilt_factor
         self.factored_lift_weight = lift_cases.weight * lift_factors
 
         # Determine the lift capacity for the CoG / CoG envelope
-        self.lift_capacity_at_cog = self.__lift_capacity(lift_cases.cog, cg_max_lift_capacity, self.crane_capacity_a,
-                            self.crane_capacity_b, lift_cases.rigging_weight_a, lift_cases.rigging_weight_b,
-                            lift_cases.lift_point_a, lift_cases.lift_point_b) / lift_factors[:, None]
+        lift_capacities_at_cog_and_env = self.__lift_capacity(cogs, cg_max_lift_capacity, lift_cases.crane_capacity_a,
+                            lift_cases.crane_capacity_b, lift_cases.rigging_weight_a, lift_cases.rigging_weight_b,
+                            lift_cases.lift_point_a_wfloat, lift_cases.lift_point_b_wfloat) / lift_factors[:, None]
+
+        self.lift_capacity_at_cog = lift_capacities_at_cog_and_env[:, 1]
+        self.lift_capacity_at_cog_envelope = lift_capacities_at_cog_and_env[:, (0, 2)]
 
         # Determine the CoG limits where lift capacity matches module weight
-        self.cog_limit_at_given_weight = self.__cog_limits(lift_factors, lift_cases.weight, self.crane_capacity_a,
-                            self.crane_capacity_b, lift_cases.rigging_weight_a, lift_cases.rigging_weight_b,
-                            lift_cases.lift_point_a, lift_cases.lift_point_b)
+        self.cog_limits_at_given_weight = self.__cog_limits(lift_factors, lift_cases.weight, lift_cases.crane_capacity_a,
+                            lift_cases.crane_capacity_b, lift_cases.rigging_weight_a, lift_cases.rigging_weight_b,
+                            lift_cases.lift_point_a_wfloat, lift_cases.lift_point_b_wfloat)
 
         # Create an overall x-axis to use as basis for the crane capacity curve
-        self.lift_capacity_curve_x = self.__create_x(lift_cases.cog, self.cog_limit_at_given_weight,
+        self.lift_capacity_curve_x = self.__create_x(cogs, self.cog_limits_at_given_weight,
             cg_max_lift_capacity, 0.5 * ureg.meters)
 
         # determine the combined crane capacity (lift capacity) for each of the cg's in x
         self.lift_capacity_curve_y = self.__lift_capacity(self.lift_capacity_curve_x, cg_max_lift_capacity,
-                            self.crane_capacity_a, self.crane_capacity_b, lift_cases.rigging_weight_a,
-                            lift_cases.rigging_weight_b, lift_cases.lift_point_a, lift_cases.lift_point_b) \
-                            / lift_factors[:, None]
+                            lift_cases.crane_capacity_a, lift_cases.crane_capacity_b, lift_cases.rigging_weight_a,
+                            lift_cases.rigging_weight_b, lift_cases.lift_point_a_wfloat,
+                            lift_cases.lift_point_b_wfloat) / lift_factors[:, None]
 
         # Calculate the true hook load and factored hook load
-        self.true_hook_load_a, self.true_hook_load_b = self.__hook_loads(lift_cases.weight, lift_cases.lift_point_a,
-            lift_cases.lift_point_b, lift_cases.cog, lift_cases.rigging_weight_a, lift_cases.rigging_weight_b)
+        self.true_hook_load_a, self.true_hook_load_b = self.__hook_loads(lift_cases.weight,
+            lift_cases.lift_point_a_wfloat, lift_cases.lift_point_b_wfloat, cogs, lift_cases.rigging_weight_a,
+            lift_cases.rigging_weight_b)
 
         self.factored_hook_load_a, self.factored_hook_load_b = self.__hook_loads(lift_cases.weight,
-            lift_cases.lift_point_a, lift_cases.lift_point_b, lift_cases.cog, lift_cases.rigging_weight_a,
+            lift_cases.lift_point_a_wfloat, lift_cases.lift_point_b_wfloat, cogs, lift_cases.rigging_weight_a,
             lift_cases.rigging_weight_b, lift_factors)
 
-        # Calculate the weight margin
-        self.weight_margin = self.lift_capacity_at_cog - lift_cases.weight
+        # Calculate the weight margins
+        self.weight_margin_cog_and_env = np.transpose(np.transpose(lift_capacities_at_cog_and_env) - lift_cases.weight)
+        #self.weight_margin = self.lift_capacity_at_cog_and_env - lift_cases.weights
+        self.weight_margin = np.min(self.weight_margin_cog_and_env, axis=1)
+
+        # Calculate the spare capacity for each crane
+        self.spare_capacity_a = lift_cases.crane_capacity_a - np.max(self.factored_hook_load_a, axis=1)
+        self.spare_capacity_b = lift_cases.crane_capacity_b - np.max(self.factored_hook_load_b, axis=1)
 
 
     def __hook_loads(self, weight: pint.Quantity, lift_point_a: pint.Quantity, lift_point_b: pint.Quantity,
