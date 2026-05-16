@@ -1,32 +1,140 @@
 "use strict";
 
-function populateFields(obj) {
-    // Assumptions:
-    // obj is a dictionary, with keys matching html-fields that will be populated
-    // Additionally, if class is "distance", the number will be formatted to
-    // 3 decimals, otherwise 0 decimals.
-    for (const [key, val] of Object.entries(obj)) {
-        let elmn = document.getElementById(key);
-        var noOfDecimals = 0;
-        if (elmn.className.includes("distance")) {
-            var noOfDecimals = 3;
-        }
-        elmn.textContent = val.toFixed(noOfDecimals);
+const VALUE_FIELDS = [
+    "crane_radius_a",
+    "crane_radius_b",
+    "weight_uncertainty_factor",
+    "cog_uncertainty_factor",
+    "tilt_factor",
+    "weight",
+    "rigging_weight_a",
+    "rigging_weight_b",
+    "lift_point_a",
+    "lift_point_b",
+    "float_a",
+    "float_b",
+    "cog_offset_a",
+    "cog_offset_b",
+];
+
+const INPUT_FIELDS = [...VALUE_FIELDS, "cog"];
+
+const DATASET_MAP = [
+    "crane_capacity_curve_pt1",
+    "crane_capacity_curve_pt2",
+    null,       // connector
+    "cog",
+    "cog_envelope",
+    "cog_limit_at_given_weight",
+    "lift_capacity_at_cog"
+];
+
+function updateGUI(evnt) {
+    if (!evnt) {
+        updateInputs();
+    }
+    updateResults();
+    updateChart();
+}
+
+function updateField(id, data) {
+    // Update GUI
+    const el = document.getElementById(id);
+    if (!el || !data || typeof data.value !== "number") return;
+
+    const decimals =
+        el.classList.contains("distance") ||
+        el.classList.contains("factor")
+            ? 3 : 0;
+
+    const value = data.value.toFixed(decimals);
+
+    // update value - either input box or calculated field
+    if (el.tagName === "SPAN") {
+        el.textContent = value;
+    } else {
+        el.value = value;
     };
+
+    // update unit
+    const unitEl = document.getElementById(id + "_unit");
+    if (unitEl) {
+        unitEl.textContent = data.unit;
+    };
+}
+
+function updateInputs() {
+    // This lists the input html fields to be updated. Requires that the JSON object with the lift cases uses the same field names.
+    const data = liftcasesJson[caseIdx];
+
+    INPUT_FIELDS.forEach(f => updateField(f, data[f]));
+
+    // Populate case dropdown box and select based on caseIdx
+    let select = document.getElementById("case");
+    select.innerHTML = "";
+    liftcasesJson.forEach((c, i) => {
+        const opt = document.createElement("option");
+        opt.textContent = c.case;
+        opt.value = i;
+        select.appendChild(opt);
+    });
+    select.value = caseIdx;
+
+    // Select crane curve
+    select = document.getElementById("crane_curve_a");
+    select.value = data.crane_curve_a;
+}
+
+function updateResults() {
+    // This list the html fields to be updated. Requires that the JSON object with the results uses the same field names.
+    const resultFields = [
+        "spare_capacity_a",
+        "spare_capacity_b",
+        "factored_lift_weight",
+        "weight_margin",
+        "combined_rigging_weight",
+        "true_hookload_a_with_cog_offset_towards_a",
+        "true_hookload_a_with_cog_offset_towards_b",
+        "true_hookload_b_with_cog_offset_towards_a",
+        "true_hookload_b_with_cog_offset_towards_b",
+        "factored_hookload_a_with_cog_offset_towards_a",
+        "factored_hookload_a_with_cog_offset_towards_b",
+        "factored_hookload_b_with_cog_offset_towards_a",
+        "factored_hookload_b_with_cog_offset_towards_b",
+        "combined_true_hookload_cog_offset_towards_a",
+        "combined_true_hookload_cog_offset_towards_b",
+        "combined_factored_hookload_cog_offset_towards_a",
+        "combined_factored_hookload_cog_offset_towards_b",
+        "distance_lift_point_a_to_cog",
+        "distance_lift_point_b_to_cog",
+        "distance_lift_point_a_to_cog_offset_towards_a",
+        "distance_lift_point_b_to_cog_offset_towards_a",
+        "distance_lift_point_a_to_cog_offset_towards_b",
+        "distance_lift_point_b_to_cog_offset_towards_b",
+        "distance_lift_point_a_to_lift_point_b",
+    ];
+
+    const data = resultsJson[caseIdx];
+
+    resultFields.forEach(f => updateField(f, data[f]));
+
+    // Handle special cases
+    updateField("distance_coga_ab", data.distance_lift_point_a_to_lift_point_b);
+    updateField("distance_cogb_ab", data.distance_lift_point_a_to_lift_point_b);
+
+    updateField("crane_capacity_a", liftcasesJson[caseIdx].crane_capacity_a);
+    updateField("crane_capacity_b", liftcasesJson[caseIdx].crane_capacity_b);
+
+    // Set module weight margin background colour according to value (positive, negative)
+    let elmn = document.getElementById("weight_margin");
+    elmn.classList.add('weight_margin', 'computed');
+
+    const isPositive = data.weight_margin.value >= 0;
+    elmn.classList.toggle('weight_margin--positive', isPositive);
+    elmn.classList.toggle('weight_margin--negative', !isPositive);
 };
 
-async function updateCalcs() {
-    // Function aquires all the parameters from the form field, processes them,
-    // obtains the results, and then processes the results for displaying in the
-    // chart and in the various fields.
-
-    // Get form input fields
-    const formData = new FormData(document.getElementById("form_dualcranelift"));
-    const formDataObj = Object.fromEntries(formData);
-    console.log("Received input from html:")
-    console.log(formDataObj);
-    window.formDataObj = formDataObj;
-
+async function runPython() {
     // Perform calcs
     await pyodide.runPythonAsync(`
         import os
@@ -35,143 +143,68 @@ async function updateCalcs() {
         import json
         import numpy as np
 
-        from dual_crane_lift_capacity.dual_crane_lift import DualCraneLift
+        import pint
 
-        # create yaml input based on form data
-        case = f"""
-            { js.formDataObj.case }:
-                crane_curve_a: { js.formDataObj.crane_curve_a }
-                crane_curve_b: { js.formDataObj.crane_curve_a }
-                crane_radius_a: { js.formDataObj.crane_radius_a } m
-                crane_radius_b: { js.formDataObj.crane_radius_b } m
-                rigging_weight_a: { js.formDataObj.rigging_weight_a } t
-                rigging_weight_b: { js.formDataObj.rigging_weight_b } t
-                weight_uncertainty_factor: { js.formDataObj.weight_uncertainty_factor }
-                cog_uncertainty_factor: { js.formDataObj.cog_uncertainty_factor }
-                tilt_factor: { js.formDataObj.tilt_factor }
-                lift_point_a:
-                  - ({ js.formDataObj.lift_point_a } - { js.formDataObj.float_a }) m
-                  - ({ js.formDataObj.lift_point_a } + { js.formDataObj.float_a }) m
-                lift_point_b:
-                  - ({ js.formDataObj.lift_point_b } - { js.formDataObj.float_b }) m
-                  - ({ js.formDataObj.lift_point_b } + { js.formDataObj.float_b }) m
-                weight: { js.formDataObj.weight } t
-                cog:
-                  - ({ js.formDataObj.cog } - { js.formDataObj.module_cog_offset_a }) m
-                  - { js.formDataObj.cog } m
-                  - ({ js.formDataObj.cog } + { js.formDataObj.module_cog_offset_b }) m
-        """
+        # from dual_crane_lift_capacity.dual_crane_lift import DualCraneLift
+        from dual_crane_lift_capacity.lift_cases import LiftCases
+        from dual_crane_lift_capacity.dual_crane_lift_capacity import DualCraneLiftCapacity
+
+        # Create an input object
+        if js.casesYamlStr:
+            logger.debug("Loading yaml")
+            liftcases = LiftCases().from_yaml(js.casesYamlStr)
+        else:
+            logger.debug("Loading json")
+            logger.debug(js.casesJsonStr)
+            liftcases = LiftCases().from_json(js.casesJsonStr)
+        liftcases_json = liftcases.to_json()
 
         # Calculate results
-        dualcranelift = DualCraneLift(data=case)
+        dualcranelift = DualCraneLiftCapacity(liftcases)
         logger.debug("Produced python output: %s", dualcranelift)
 
-        # Helper variables to improve readability
-        res = dualcranelift.dual_crane_lift_capacity_results
-        inp = dualcranelift.lift_cases
-
-        # Set variables to be returned and displayed
-        ret = {}
-        ret["crane_capacity_a"] = res.crane_capacity_a[0].to("metric_ton").magnitude
-        ret["crane_capacity_b"] = res.crane_capacity_b[0].to("metric_ton").magnitude
-
-        cog = inp.cog[0][1].to("meters").magnitude
-        lpa = np.average(inp.lift_point_a[0]).to("meter").magnitude
-        lpb = np.average(inp.lift_point_b[0]).to("meter").magnitude
-        ret["distance_cog_a"] = cog - lpa
-        ret["distance_cog_b"] = lpb - cog
-        ret["distance_cog_ab"] = lpb - lpa
-
-        ret["factored_lift_weight"] = res.factored_lift_weight[0].to("metric_ton").magnitude
-
-        ret["combined_rigging_weight"] = (inp.rigging_weight_a + inp.rigging_weight_b)[0].to("metric_ton").magnitude
-
-        # edge of CoG envelope towards edges a and b of envelope
-        lpa = np.average(inp.lift_point_a[0]).to("meter").magnitude
-        lpb = np.average(inp.lift_point_b[0]).to("meter").magnitude
-        cog = inp.cog[0].to("meters").magnitude
-        dist_a = cog - lpa
-        dist_b = lpb - cog
-        dist_ab = lpb - lpa
-
-        ret["distance_coga_a"] = dist_a[0]
-        ret["distance_coga_b"] = dist_b[0]
-        ret["distance_coga_ab"] = dist_ab
-
-        ret["distance_cogb_a"] = dist_a[2]
-        ret["distance_cogb_b"] = dist_b[2]
-        ret["distance_cogb_ab"] = dist_ab
-
-        # true hook load - edge of CoG envelope towards a and b
-        total = res.true_hook_load_a + res.true_hook_load_b
-
-        ret["true_hook_load_a_cog_a"] = res.true_hook_load_a[0][0].to("metric_ton").magnitude
-        ret["true_hook_load_b_cog_a"] = res.true_hook_load_b[0][0].to("metric_ton").magnitude
-        ret["total_true_hook_load_cog_a"] = total[0][0].to("metric_ton").magnitude
-
-        ret["true_hook_load_a_cog_b"] = res.true_hook_load_a[0][1].to("metric_ton").magnitude
-        ret["true_hook_load_b_cog_b"] = res.true_hook_load_b[0][1].to("metric_ton").magnitude
-        ret["total_true_hook_load_cog_b"] = total[0][1].to("metric_ton").magnitude
-
-        # factored hook load - edge of CoG envelope towards a and b
-        total = res.factored_hook_load_a + res.factored_hook_load_b
-
-        ret["factored_hook_load_a_cog_a"] = res.factored_hook_load_a[0][0].to("metric_ton").magnitude
-        ret["factored_hook_load_b_cog_a"] = res.factored_hook_load_b[0][0].to("metric_ton").magnitude
-        ret["total_factored_hook_load_cog_a"] = total[0][0].to("metric_ton").magnitude
-
-        ret["factored_hook_load_a_cog_b"] = res.factored_hook_load_a[0][1].to("metric_ton").magnitude
-        ret["factored_hook_load_b_cog_b"] = res.factored_hook_load_b[0][1].to("metric_ton").magnitude
-        ret["total_factored_hook_load_cog_b"] = total[0][1].to("metric_ton").magnitude
-
-        # spare capacity - difference between the crane capacity and the largest factored hook load
-        ret["spare_capacity_a"] = res.spare_capacity_a[0].to("metric_ton").magnitude
-        ret["spare_capacity_b"] = res.spare_capacity_b[0].to("metric_ton").magnitude
-
-        # module weight margin
-        ret["module_weight_margin"] = res.weight_margin[0].to("metric_ton").magnitude
-        ret_json = json.dumps(ret)
-
-        # Prepare data for plotting
-        chart_data = {}
-        #   capacity curve
-        x = res.lift_capacity_curve_x[0].to("meter").magnitude.tolist()
-        y = res.lift_capacity_curve_y[0].to("metric_ton").magnitude.tolist()
-        l = len(x) // 2
-        chart_data["crane_capacity_curve_pt1"] = [{"x": x1, "y": y1} for x1, y1 in zip(x[:l],y[:l])]
-        chart_data["crane_capacity_curve_pt2"] = [{"x": x1, "y": y1} for x1, y1 in zip(x[l:],y[l:])]
-
-        #   cogs
-        cog = inp.cog[0].to("meter").magnitude.tolist()
-        weight = inp.weight[0].to("metric_ton").magnitude.tolist()
-        chart_data["cog"] = [{"x": cog[1], "y": weight}]
-        chart_data["cog_envelope"] = [{"x": cog[0], "y": weight}, {"x": cog[2], "y": weight}]
-
-        #   intercepts
-        x = res.cog_limit_at_given_weight[0].to("meters").magnitude.tolist()
-        chart_data["cog_limit_at_given_weight"] = [{"x": x[0], "y": weight}, {"x": x[1], "y": weight}]
-
-        y = res.lift_capacity_at_cog[0].to("metric_ton").magnitude.tolist()
-        idx = np.argmin(y, axis=0)
-        chart_data["lift_capacity_at_cog"] = [{"x": cog[1], "y": y[1]}, {"x": cog[idx], "y": y[idx]}]
-
-        ret_chart_json = json.dumps(chart_data)
+        # Return input and results
+        results_json = dualcranelift.to_json()
     `);
+};
 
-    // Get computed values from python, and populate html page
-    const ret = JSON.parse(pyodide.globals.get("ret_json"));
-    console.log(ret);
-    populateFields(ret);
+function extractResults() {
+    // Get the lift cases from python, create JSON object, and populate html page if required
+    let ret = pyodide.globals.get("liftcases_json");
+    if (ret) liftcasesJson = JSON.parse(ret);
+    console.log("Lift cases returned from python:");
+    console.log(liftcasesJson);
 
-    // Set module weight margin background colour according to value (positive, negative)
-    let elmn = document.getElementById("module_weight_margin");
-    elmn.classList.add('weight_margin', 'computed');
+    // Get computed values from python, create a JSON object, and populate html page
+    ret = pyodide.globals.get("results_json");
+    if (ret) resultsJson = JSON.parse(ret);
+    console.log("Results returned from python:");
+    console.log(resultsJson);
+};
 
-    const isPositive = ret.module_weight_margin >= 0;
-    elmn.classList.toggle('weight_margin--positive', isPositive);
-    elmn.classList.toggle('weight_margin--negative', !isPositive);
+async function performCalcs(evnt) {
+    // Function aquires either a serialised yaml file or a json object, performs the calculations, and returns results
 
-    updateChart();
+    // Get the serialized yaml/json input describing the cases
+//    if(evnt && (evnt.target.tagName == "INPUT" || evnt.target.tagName == "SELECT")) {
+    if (evnt && ["INPUT", "SELECT"].includes(evnt.target.tagName)) {
+        // If an input box was modified, then process the json
+        window.casesJsonStr = JSON.stringify(liftcasesJson);
+        window.casesYamlStr = null;
+    } else {
+        // otherwise, process the yaml-string
+        window.casesJsonStr = null;
+        window.casesYamlStr = casesYamlStr;
+    };
+
+    // Run the python code
+    await runPython();
+
+    // Populate the js variables with updated results
+    extractResults();
+
+    // Update GUI with results
+    updateGUI(evnt);
 };
 
 async function initialize() {
@@ -180,8 +213,8 @@ async function initialize() {
     // Load micropip - required to load non-standard packages
     await pyodide.loadPackage("micropip");
     const micropip = pyodide.pyimport("micropip");
-
     await micropip.install("requests");
+    await micropip.install("simplejson");
 
     // Load dual crane lift capacity lib
     //wheel_url = "https://github.com/akjore/dual_crane_lift_capacity.whl";
@@ -230,11 +263,11 @@ async function initialize() {
         Path("/crane_curves.yaml").write_bytes(response.content)
         os.environ["CRANE_CURVE_FILENAME"] = "/crane_curves.yaml"
 
-        crane_curves = CraneCurves().crane_curve_ids
+        crane_curves = CraneCurves.crane_curve_ids()
         logger.info("Crane curves found: %s", list(crane_curves))
     `);
 
-    // Populate select box, and select the option that matches the starting example
+    // Populate select box
     let crane_curves = document.getElementById("crane_curve_a");
     let crane_curves_lst = pyodide.globals.get("crane_curves");
 
@@ -242,18 +275,11 @@ async function initialize() {
         let opt = document.createElement("option");
         opt.value = crane_curve;
         opt.innerHTML = crane_curve;
-        if (crane_curve == "S7000.main.fixed_1.5") {
-            opt.selected = true;
-        };
-            crane_curves.append(opt);
+        crane_curves.append(opt);
     };
 
-    // Copy the crane curve file to console
-    let file = pyodide.FS.readFile("/crane_curves.yaml", { encoding: "utf8" });
-    console.log(file);
-
-    // Perform calculations for sample
-    updateCalcs();
+    // Wrap up initialisation
+    ready();
 };
 
 function initializeChart() {
@@ -386,7 +412,7 @@ function initializeChart() {
                         weight: "bold",
                         size: 20,
                     },
-	        		text: "Sample"
+	        		text: ""
 	      		},
                 annotation: {
                     annotations: {
@@ -396,17 +422,20 @@ function initializeChart() {
                             borderColor: annotationColour,
                             borderWidth: 1,
                             borderDash: [5, 5],
+                            display: true,
                         },
                         weight_margin_2: {
                             type: "line",
                             borderColor: annotationColour,
                             borderWidth: 1,
                             borderDash: [5, 5],
+                            display: true,
                         },
                         weight_margin_3: {
                             type: "line",
                             borderColor: annotationColour,
                             borderWidth: 1,
+                            display: true,
                             label: {
                                 display: true,
                                 position: "center",
@@ -434,17 +463,20 @@ function initializeChart() {
                             borderColor: annotationColour,
                             borderWidth: 1,
                             borderDash: [5, 5],
+                            display: true,
                         },
                         weight_margin_env_2: {
                             type: "line",
                             borderColor: annotationColour,
                             borderWidth: 1,
                             borderDash: [5, 5],
+                            display: true,
                         },
                         weight_margin_env_3: {
                             type: "line",
                             borderColor: annotationColour,
                             borderWidth: 1,
+                            display: true,
                             label: {
                                 display: true,
                                 position: "center",
@@ -472,23 +504,27 @@ function initializeChart() {
                             borderColor: annotationColour,
                             borderWidth: 1,
                             borderDash: [5, 5],
+                            display: true,
                         },
                         cog_limit_2: {
                             type: "line",
                             borderColor: annotationColour,
                             borderWidth: 1,
                             borderDash: [5, 5],
+                            display: true,
                         },
                         cog_limit_3: {
                             type: "line",
                             borderColor: annotationColour,
                             borderWidth: 1,
                             borderDash: [5, 5],
+                            display: true,
                         },
                         cog_limit_4: {
                             type: "line",
                             borderColor: annotationColour,
                             borderWidth: 1,
+                            display: true,
                             label: {
                                 display: true,
                                 position: "center",
@@ -514,6 +550,7 @@ function initializeChart() {
                             type: "line",
                             borderColor: annotationColour,
                             borderWidth: 1,
+                            display: true,
                             label: {
                                 display: true,
                                 position: "center",
@@ -604,168 +641,244 @@ function initializeChart() {
     return chart;
 };
 
+function buildChartData(caseData, resultData) {
+    const x_coord = resultData.lift_capacity_curve_x.value;
+    const y_coord = resultData.lift_capacity_curve_y.value;
+    const weight = caseData.weight.value;
+    const cog = caseData.cog.value;
+    const cog_env = caseData.cog_envelope.value;
+    const cog_limit_at_weight = resultData.cog_limits_at_given_weight.value;
+    const lift_capacity_at_cog = resultData.lift_capacity_at_cog.value;
+    const lift_capacity_at_cog_envelope = resultData.lift_capacity_at_cog_envelope.value;
+    const min = Math.min(... lift_capacity_at_cog_envelope);
+    const idx = lift_capacity_at_cog_envelope.indexOf(min);
+    const len = Math.floor(x_coord.length / 2)
+
+    const coords = x_coord.map((x, i) => ({ x, y: y_coord[i] }));
+
+    return {
+        crane_capacity_curve_pt1: coords.slice(0, len),
+        crane_capacity_curve_pt2: coords.slice(len),
+        cog: [{x: cog, y: weight}],
+        cog_envelope: [{x: cog_env[0], y: weight}, {x: cog_env[1], y: weight}],
+        cog_limit_at_given_weight: [{x: cog_limit_at_weight[0], y: weight}, {x: cog_limit_at_weight[1], y: weight}],
+        lift_capacity_at_cog: [{x: cog, y: lift_capacity_at_cog}, {x: cog_env[idx], y: lift_capacity_at_cog_envelope[idx]}],
+    };
+};
+
+function updateDatasets(chartData) {
+    DATASET_MAP.forEach((key, i) => {
+        if (key) {
+            chart.data.datasets[i].data = chartData[key];
+        }
+    });
+
+    // special connector dataset
+    chart.data.datasets[2].data = [
+        chartData.crane_capacity_curve_pt1.at(-1),
+        chartData.crane_capacity_curve_pt2[0]
+    ];
+}
+
+function updateAnnotation(annotation, xmin, xmax, ymin, ymax, label=null) {
+    const annotations = chart.options.plugins.annotation.annotations;
+
+    annotations[annotation].xMin = xmin;
+    annotations[annotation].xMax = xmax;
+    annotations[annotation].yMin = ymin;
+    annotations[annotation].yMax = ymax;
+
+    if(label) {
+        annotations[annotation].label.content = label;
+    }
+
+    annotations[annotation].display = xmin != null && xmax != null && ymin != null && ymax != null;
+}
+
 function updateChart() {
     // Update chart to reflect current entries.
 
-    // Get computed values from python
-    const chart_data = JSON.parse(pyodide.globals.get("ret_chart_json"));
-    console.log(chart_data);
-    const formData = new FormData(document.getElementById("form_dualcranelift"));
-    const formDataObj = Object.fromEntries(formData);
-
     // Remove existing data
-    chart.data.labels.pop();
     chart.data.datasets.forEach((dataset) => {
-        dataset.data.pop();
+        dataset.data = [];
     });
 
     // Add new data
-    chart.data.datasets[0].data = chart_data.crane_capacity_curve_pt1;
-    chart.data.datasets[1].data = chart_data.crane_capacity_curve_pt2;
-    chart.data.datasets[2].data = [chart_data.crane_capacity_curve_pt1.slice(-1)[0], chart_data.crane_capacity_curve_pt2[0]];
-    chart.data.datasets[3].data = chart_data.cog;
-    chart.data.datasets[4].data = chart_data.cog_envelope;
-    chart.data.datasets[5].data = chart_data.cog_limit_at_given_weight;
-    chart.data.datasets[6].data = chart_data.lift_capacity_at_cog;
+    const caseData = liftcasesJson[caseIdx];
+    const resultData = resultsJson[caseIdx];
 
-    // Update title
-    chart.options.plugins.title.text = formDataObj.case + " - " + formDataObj.crane_curve_a;
+    // Gather required data for charts
+    const chartData = buildChartData(caseData, resultData);
+
+    // Update chart data sets
+    updateDatasets(chartData);
+
+    // Update chart title
+    chart.options.plugins.title.text = caseData.case + " - " + caseData.crane_curve_a;
 
     // Update dim lines - weight margin at CoG
-    let annotations = chart.options.plugins.annotation.annotations;
+    const annotations = chart.options.plugins.annotation.annotations;
 
-    let xmin = chart_data.crane_capacity_curve_pt1[0].x;
-    let xmax = chart_data.crane_capacity_curve_pt2.slice(-1)[0].x;
-    let ymin = Math.min(chart_data.crane_capacity_curve_pt1[0].y, chart_data.crane_capacity_curve_pt2.slice(-1)[0].y);
-    let ymax = chart_data.crane_capacity_curve_pt2[0].y;
-    let x1 = xmin - 0.1 * (xmax - xmin);
-    let x2 = xmax + 0.1 * (xmax - xmin);
-    let y1 = ymin;
-    let y2 = ymax + 0.1 * (ymax - ymin);
+    const xmin = chartData.crane_capacity_curve_pt1[0].x;
+    const xmax = chartData.crane_capacity_curve_pt2.slice(-1)[0].x;
+    const ymin = Math.min(chartData.crane_capacity_curve_pt1[0].y, chartData.crane_capacity_curve_pt2.slice(-1)[0].y);
+    const ymax = chartData.crane_capacity_curve_pt2[0].y;
+    const x1 = xmin - 0.1 * (xmax - xmin);
+    const x2 = xmax + 0.1 * (xmax - xmin);
+    const y1 = ymin;
+    const y2 = ymax + 0.1 * (ymax - ymin);
 
-    annotations.weight_margin_1.xMin = chart_data.cog_limit_at_given_weight[1].x;
-    annotations.weight_margin_1.xMax = x2;
-    annotations.weight_margin_1.yMin = chart_data.cog[0].y;
-    annotations.weight_margin_1.yMax = chart_data.cog[0].y;
+    let xMin = chartData.cog_limit_at_given_weight[1].x;
+    let xMax = x2;
+    let yMin = chartData.cog[0].y;
+    let yMax = yMin;
+    updateAnnotation("weight_margin_1", xMin, xMax, yMin, yMax);
 
-    annotations.weight_margin_2.xMin = chart_data.lift_capacity_at_cog[0].x;
-    annotations.weight_margin_2.xMax = x2;
-    annotations.weight_margin_2.yMin = chart_data.lift_capacity_at_cog[0].y;
-    annotations.weight_margin_2.yMax = chart_data.lift_capacity_at_cog[0].y;
+    xMin = chartData.lift_capacity_at_cog[0].x;
+    xMax = x2;
+    yMin = chartData.lift_capacity_at_cog[0].y;
+    yMax = yMin;
+    updateAnnotation("weight_margin_2", xMin, xMax, yMin, yMax);
 
-    annotations.weight_margin_3.xMin = x2;
-    annotations.weight_margin_3.xMax = x2;
-    annotations.weight_margin_3.yMin = chart_data.cog[0].y;
-    annotations.weight_margin_3.yMax = chart_data.lift_capacity_at_cog[0].y;
-    annotations.weight_margin_3.label.content = (chart_data.lift_capacity_at_cog[0].y - chart_data.cog[0].y).toFixed(0);
+    xMin = x2;
+    xMax = x2;
+    yMin = chartData.cog[0].y;
+    yMax = chartData.lift_capacity_at_cog[0].y;
+    let label = (chartData.lift_capacity_at_cog[0].y - chartData.cog[0].y).toFixed(0);
+    updateAnnotation("weight_margin_3", xMin, xMax, yMin, yMax, label);
 
     // Update dim lines - weight margin at CoG env
-    annotations.weight_margin_env_1.xMin = chart_data.cog_limit_at_given_weight[0].x;
-    annotations.weight_margin_env_1.xMax = x1;
-    annotations.weight_margin_env_1.yMin = chart_data.cog[0].y;
-    annotations.weight_margin_env_1.yMax = chart_data.cog[0].y;
+    xMin = chartData.cog_limit_at_given_weight[0].x;
+    xMax = x1;
+    yMin = chartData.cog[0].y;
+    yMax = yMin;
+    updateAnnotation("weight_margin_env_1", xMin, xMax, yMin, yMax);
 
-    annotations.weight_margin_env_2.xMin = chart_data.lift_capacity_at_cog[1].x;
-    annotations.weight_margin_env_2.xMax = x1;
-    annotations.weight_margin_env_2.yMin = chart_data.lift_capacity_at_cog[1].y;
-    annotations.weight_margin_env_2.yMax = chart_data.lift_capacity_at_cog[1].y;
+    xMin = chartData.lift_capacity_at_cog[1].x;
+    xMax = x1;
+    yMin = chartData.lift_capacity_at_cog[1].y;
+    yMax = yMin;
+    updateAnnotation("weight_margin_env_2", xMin, xMax, yMin, yMax);
 
-    annotations.weight_margin_env_3.xMin = x1;
-    annotations.weight_margin_env_3.xMax = x1;
-    annotations.weight_margin_env_3.yMin = chart_data.cog[0].y;
-    annotations.weight_margin_env_3.yMax = chart_data.lift_capacity_at_cog[1].y;
-    annotations.weight_margin_env_3.label.content = (chart_data.lift_capacity_at_cog[1].y - chart_data.cog[0].y).toFixed(0);
+    xMin = x1;
+    xMax = x1;
+    yMin = chartData.cog[0].y;
+    yMax = chartData.lift_capacity_at_cog[1].y;
+    label = (chartData.lift_capacity_at_cog[1].y - chartData.cog[0].y).toFixed(0);
+    updateAnnotation("weight_margin_env_3", xMin, xMax, yMin, yMax, label);
 
     // Update dim lines - CoG limits at current weight
-    annotations.cog_limit_1.xMin = chart_data.cog_limit_at_given_weight[0].x;
-    annotations.cog_limit_1.xMax = chart_data.cog_limit_at_given_weight[0].x;
-    annotations.cog_limit_1.yMin = y1;
-    annotations.cog_limit_1.yMax = chart_data.cog[0].y;
+    xMin = chartData.cog_limit_at_given_weight[0].x;
+    xMax = xMin;
+    yMin = y1;
+    yMax = chartData.cog[0].y;
+    updateAnnotation("cog_limit_1", xMin, xMax, yMin, yMax);
 
-    annotations.cog_limit_2.xMin = chart_data.cog[0].x;
-    annotations.cog_limit_2.xMax = chart_data.cog[0].x;
-    annotations.cog_limit_2.yMin = y1;
-    annotations.cog_limit_2.yMax = chart_data.cog[0].y;
+    xMin = chartData.cog[0].x;
+    xMax = xMin;
+    yMin = y1;
+    yMax = chartData.cog[0].y;
+    updateAnnotation("cog_limit_2", xMin, xMax, yMin, yMax);
 
-    annotations.cog_limit_3.xMin = chart_data.cog_limit_at_given_weight[1].x;
-    annotations.cog_limit_3.xMax = chart_data.cog_limit_at_given_weight[1].x;
-    annotations.cog_limit_3.yMin = y1;
-    annotations.cog_limit_3.yMax = chart_data.cog[0].y;
+    xMin = chartData.cog_limit_at_given_weight[1].x;
+    xMax = xMin;
+    yMin = y1;
+    yMax = chartData.cog[0].y;
+    updateAnnotation("cog_limit_3", xMin, xMax, yMin, yMax);
 
-    annotations.cog_limit_4.xMin = chart_data.cog_limit_at_given_weight[0].x;
-    annotations.cog_limit_4.xMax = chart_data.cog[0].x;
-    annotations.cog_limit_4.yMin = y1;
-    annotations.cog_limit_4.yMax = y1;
-    annotations.cog_limit_4.label.content = (chart_data.cog[0].x - chart_data.cog_limit_at_given_weight[0].x).toFixed(3);
+    xMin = chartData.cog_limit_at_given_weight[0].x;
+    xMax = chartData.cog[0].x;
+    yMin = y1;
+    yMax = y1;
+    label = (chartData.cog[0].x - chartData.cog_limit_at_given_weight[0].x).toFixed(3);
+    updateAnnotation("cog_limit_4", xMin, xMax, yMin, yMax, label);
 
-    annotations.cog_limit_5.xMin = chart_data.cog[0].x;
-    annotations.cog_limit_5.xMax = chart_data.cog_limit_at_given_weight[1].x;
-    annotations.cog_limit_5.yMin = y1;
-    annotations.cog_limit_5.yMax = y1;
-    annotations.cog_limit_5.label.content = (chart_data.cog_limit_at_given_weight[1].x - chart_data.cog[0].x).toFixed(3);
+    xMin = chartData.cog[0].x;
+    xMax = chartData.cog_limit_at_given_weight[1].x;
+    yMin = y1;
+    yMax = y1;
+    label = (chartData.cog_limit_at_given_weight[1].x - chartData.cog[0].x).toFixed(3);
+    updateAnnotation("cog_limit_5", xMin, xMax, yMin, yMax, label);
 
     // Update dim lines - CoG offset from peak
-    annotations.cog_peak_offset_1.xMin = chart_data.cog[0].x;
-    annotations.cog_peak_offset_1.xMax = chart_data.cog[0].x;
-    annotations.cog_peak_offset_1.yMin = chart_data.lift_capacity_at_cog[0].y;
-    annotations.cog_peak_offset_1.yMax = y2;
+    xMin = chartData.cog[0].x;
+    xMax = xMin;
+    yMin = chartData.lift_capacity_at_cog[0].y;
+    yMax = y2;
+    updateAnnotation("cog_peak_offset_1", xMin, xMax, yMin, yMax);
 
-    annotations.cog_peak_offset_2.xMin = chart_data.crane_capacity_curve_pt2[0].x;
-    annotations.cog_peak_offset_2.xMax = chart_data.crane_capacity_curve_pt2[0].x;
-    annotations.cog_peak_offset_2.yMin = chart_data.crane_capacity_curve_pt2[0].y;
-    annotations.cog_peak_offset_2.yMax = y2;
+    xMin = chartData.crane_capacity_curve_pt2[0].x;
+    xMax = xMin;
+    yMin = chartData.crane_capacity_curve_pt2[0].y;
+    yMax = y2;
+    updateAnnotation("cog_peak_offset_2", xMin, xMax, yMin, yMax);
 
-    annotations.cog_peak_offset_3.xMin = chart_data.crane_capacity_curve_pt2[0].x;
-    annotations.cog_peak_offset_3.xMax = chart_data.cog[0].x;
-    annotations.cog_peak_offset_3.yMin = y2;
-    annotations.cog_peak_offset_3.yMax = y2;
-    annotations.cog_peak_offset_3.label.content = (Math.abs(chart_data.cog[0].x - chart_data.crane_capacity_curve_pt2[0].x)).toFixed(3);
+    xMin = chartData.crane_capacity_curve_pt2[0].x;
+    xMax = chartData.cog[0].x;
+    yMin = y2;
+    yMax = y2;
+    label = (Math.abs(chartData.cog[0].x - chartData.crane_capacity_curve_pt2[0].x)).toFixed(3);
+    updateAnnotation("cog_peak_offset_3", xMin, xMax, yMin, yMax, label);
 
     // Update chart
     chart.update();
-
-    // This is the last step - ready for new instructions
-    ready();
-    //console.log("Ready.");
 };
 
 // JS hook: add listener to form for any changes to input fields
 let form = document.getElementById('form_dualcranelift');
 form.addEventListener('change', function(evt) {
-    console.log(evt.target.value);
-    if (window.updateCalcs) updateCalcs();
+    // Update liftcasesJson with the change
+    // GUI only permits changes to values -> no changes to units
+
+    // Capture new value, and convert to number if numeric field.
+    const id = evt.target.id;
+    const isSelect = evt.target.tagName === "SELECT";
+    const val = isSelect ? evt.target.value : Number(evt.target.value);
+
+    const data = liftcasesJson?.[caseIdx];
+    if (!data) return;
+
+    if (VALUE_FIELDS.includes(id)) {
+        data[id].value = val;
+    }
+
+    // special cases
+    if (id === "crane_curve_a") {
+        data.crane_curve_a = val;
+        data.crane_curve_b = val;
+    }
+
+    if (id === "cog") {
+        data.cog.value = val;
+        data.cog_envelope.value[0] = data.cog.value - data.cog_offset_a.value;
+        data.cog_envelope.value[1] = data.cog.value + data.cog_offset_b.value;
+    }
+
+    if (id === "cog_offset_a") {
+        data.cog_envelope.value[0] = data.cog.value - val;
+    }
+
+    if (id === "cog_offset_b") {
+        data.cog_envelope.value[1] = data.cog.value + val;
+    }
+
+    if (window.performCalcs) performCalcs(evt);
 });
 
-document.getElementById("overlay").style.visibility = "visible"; // Show overlay when page starts loading
+// Show overlay when page starts loading
+document.getElementById("overlay").style.visibility = "visible";
 
+// When page has loaded, hide the overlay and write message to log
 function ready() {
     document.getElementById("overlay").style.visibility = "hidden";
+
+    // Allow form elements to update calcs
+//    window.performCalcs = performCalcs();
+    window.performCalcs = performCalcs;
+    performCalcs();
+
     console.log("Ready.");
 }
-//window.addEventListener('load', function () {
-//  alert("It's loaded!")
-//})
-
-//window.addEventListener('load', function () {
-//window.onload = function() {
-//    document.getElementById("overlay").style.visibility = "hidden"; // Hide overlay when page is loaded
-//});
-
-//window.onload = function() {
-//    document.getElementById('overlay').style.visibility = 'visible'; // Show overlay when page starts loading
-//};
-
-//HTMLInputElementObject.addEventListener('input', (evt) => {
-//  console.log('run'); // Do something
-//});
-
-var Chart = window.Chart;
-
-// Register plug-ins
-Chart.register(ChartDataLabels);
-
-// Set chart font
-Chart.defaults.font.family = "Trebuchet MS";
 
 // Load Pyodide - required to run python code in browser
 const pyodide = await loadPyodide();
@@ -774,12 +887,18 @@ const pyodide = await loadPyodide();
 initialize();
 
 // Initialize chart
+var Chart = window.Chart;
+
+//      Register chart plug-ins
+Chart.register(ChartDataLabels);
+
 var ctx = document.getElementById("capacity_chart");
 var chart = initializeChart();
 
-// Allow form elements to update calcs
-window.updateCalcs = updateCalcs;
+//      Set chart font
+Chart.defaults.font.family = "Trebuchet MS";
 
+// 'Details' section is nominally hidden - toggle to display / hide
 const toggle = document.getElementById('detailsToggle');
 const section = document.getElementById('detailsSection');
 
@@ -791,7 +910,7 @@ function toggleDetails() {
 
 toggle.addEventListener('click', toggleDetails);
 
-// keyboard accessibility
+//      keyboard accessibility
 toggle.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -799,16 +918,17 @@ toggle.addEventListener('keydown', (e) => {
     }
 });
 
+// File upload / drag and drop drop zone
 const loadBtn   = document.getElementById('loadYamlBtn');
 const dropZone  = document.getElementById('loadYamlDropZone');
 const fileInput = document.getElementById('yamlFileInput');
 
-/* ---------- Click: open file picker ---------- */
+//      Click: open file picker
 loadBtn.addEventListener('click', () => {
     fileInput.click();
 });
 
-/* ---------- File chosen via picker ---------- */
+//      File chosen via picker
 fileInput.addEventListener('change', async () => {
     const file = fileInput.files[0];
     if (!file) return;
@@ -816,7 +936,7 @@ fileInput.addEventListener('change', async () => {
     fileInput.value = ''; // allow re-upload of same file
 });
 
-/* ---------- Drag & drop ---------- */
+//      Drag & drop
 dropZone.addEventListener('dragover', e => {
     e.preventDefault();           // required
     dropZone.classList.add('drag-over');
@@ -836,19 +956,59 @@ dropZone.addEventListener('drop', async e => {
     await handleYamlFile(file);
 });
 
+//      Handle loading of yaml-file
 async function handleYamlFile(file) {
     if (!file.name.match(/\.ya?ml$/i)) {
         alert('Please select a .yaml or .yml file');
         return;
     }
 
-    const text = await file.text();
-
-  // --- Next steps live HERE ---
-  // 1) parse YAML
-  // 2) validate schema
-  // 3) populate case dropdown
-  // 4) select first case
-
-    loadYamlCases(text, file.name);
+    casesYamlStr = await file.text();
+    await performCalcs();
 }
+
+// Add the feather icons to the web page
+feather.replace();
+
+// Hooks for menu
+const btn = document.getElementById("yamlMenuBtn");
+const menu = document.getElementById("yamlMenu");
+
+btn.addEventListener("click", () => {
+    menu.hidden = !menu.hidden;
+});
+
+//  close on click elsewhere
+document.addEventListener("click", (e) => {
+    if (!btn.contains(e.target) && !menu.contains(e.target)) {
+        menu.hidden = true;
+    }
+});
+
+// variables
+let liftcasesJson = null;
+let resultsJson = null;
+let caseIdx = 0;
+
+// Sample to get user going
+let casesYamlStr = `
+cases:
+  - case: Sample 1
+    crane_curve_a: S7000.main.fixed_1.5
+    crane_curve_b: S7000.main.fixed_1.5
+    crane_radius_a: 50.0 m
+    crane_radius_b: 50.0 m
+    rigging_weight_a: 435 t
+    rigging_weight_b: 360 t
+    weight_uncertainty_factor: 1.03
+    cog_uncertainty_factor: 1.02
+    tilt_factor: 1.02
+    lift_point_a: 43.230 m
+    lift_point_b: 82.0 m
+    weight: 9410 t
+    float_a: 3.030 m
+    # cog: 61.646 m
+    cog: 62.750 m
+    # cog_envelope: [(61.668-0.5) m, (61.668+0.5) m]
+    cog_envelope: [(62.750-1.500) m, (62.750+1.500) m]
+`;

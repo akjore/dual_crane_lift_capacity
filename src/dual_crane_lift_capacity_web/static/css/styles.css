@@ -44,6 +44,10 @@ form {
   grid-template-columns: 1fr 3fr;
   gap: 3px;
   padding: 3px;
+
+
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .container div { background-color: #f4f4f9; }
@@ -279,4 +283,75 @@ button {
 .case-load-zone.drag-over {
   outline: 2px dashed #f5a623;
   outline-offset: 4px;
+}
+
+.header {
+  position: relative;
+  text-align: center;
+}
+
+/* ========== Section for top right menu icons ========== */
+.header-actions {
+  position: absolute;
+  top: 6px;
+  right: 14px;
+  display: flex;
+  gap: 12px;
+}
+
+.header-actions button,
+.header-actions a {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #666;
+  text-decoration: none;
+}
+
+.header-actions svg {
+  width: 18px;
+  height: 18px;
+}
+
+.header-actions button:hover,
+.header-actions a:hover {
+  color: #000;
+}
+
+.header-actions button {
+  color: #b36b00;
+}
+
+.header-actions {
+  gap: 14px;
+}
+
+.header-actions button:nth-child(2) {
+  margin-right: 10px;
+}
+
+.menu {
+  position: absolute;
+  top: 32px;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  padding: 4px 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.menu button {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.menu button:hover {
+  background: #f0f0f0;
 }

@@ -20,9 +20,14 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
 
+	<!-- Load yaml library -->
+	<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.1/dist/js-yaml.min.js"></script>
+
     <!-- Load .js file to handle gui and interaction with pyodide -->
 	<script type="module" src="{{ url_for('static', filename='js/single_case.js') }}"></script>
 
+	<!-- Feather icons -->
+	<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
 </head>
 
 <body>
@@ -33,8 +38,32 @@
 
 	<div class="container">
   		<div class="header">
-        		<h1>Dual crane lift calculation</h1>
+        	<h1>Dual crane lift calculation</h1>
 <!--        <p>Dual lift assessment - for internal use only</p> -->
+
+  			<div class="header-actions">
+			    <button title="Download report">
+			      <i data-feather="file"></i>
+			    </button>
+
+
+				<button id="yamlMenuBtn" title="YAML options">
+		  			<i data-feather="download"></i>
+				</button>
+
+				<div id="yamlMenu" class="menu" hidden>
+				    <button id="downloadYaml">Download YAML</button>
+				    <button id="downloadTemplate">Download template YAML</button>
+				</div>
+
+			    <a href="https://github.com/akjore/dual_crane_lift_capacity" target="_blank" title="View on GitHub">
+			      <i data-feather="github"></i>
+			    </a>
+
+			    <a href="https://github.com/akjore/dual_crane_lift_capacity/issues" target="_blank" title="Report issue">
+			      <i data-feather="alert-circle"></i>
+			    </a>
+			</div>
 		</div>
 		<div class="input_panel">
 	        <form id="form_dualcranelift">
@@ -42,10 +71,7 @@
   					<div class="section_container">
 						<div class="input_row_case">
   							<label class="section-title--inline" for="case">Case:</label>
-	  						<select id="case" name="case" class="case-select">
-    							<option value="Sample" selected>Sample</option>
-  							</select>
-
+	  						<select id="case" name="case" class="case-select"></select>
 							<div id="loadYamlDropZone" class="case-load-zone">
   								<button type="button" id="loadYamlBtn" class="case-load-icon" aria-label="Load cases" title="Load cases from YAML file">
     								📂
@@ -68,39 +94,43 @@
 						<div class="input_row">
   							<label for="crane_curve_a">Crane curve:</label>
 							<select id="crane_curve_a" name="crane_curve_a" class="wide-select"></select>
-
   							<span></span>
   							<span></span>
   							<span></span>
 						</div>
 						<div class="input_row">
-							Distance between crane centres [m]:
+							Distance between crane centres:
 							<span></span>
-							<span class="computed" id="distance_between_crane_centres">&nbsp;</span>
+							<span class="computed distance" id="distance_between_crane_centres">&nbsp;</span>
+							<span class="unit" id="distance_between_crane_centres_unit"></span>
 						</div>
 						<div class="input_row">
-							<label for="crane_radius_a">Crane radii [m]:</label>
-							<input id="crane_radius_a" name="crane_radius_a" type="number" min="0" value="50" />
+							<label for="crane_radius_a">Crane radii:</label>
+							<input class="distance" id="crane_radius_a" name="crane_radius_a" type="number" min="0" value="" />
 							<span></span>
-							<input id="crane_radius_b" name="crane_radius_b" type="number" min="0" value="50" />
+							<input class="distance" id="crane_radius_b" name="crane_radius_b" type="number" min="0" value="" />
+							<span class="unit" id="crane_radius_a_unit">&nbsp;</span>
 						</div>
 						<div class="input_row">
-							<label for="slew_angle_a">Slew angle [deg]:</label>
-							<input id="slew_angle_a" name="slew_angle_a" type="number" min="0" value="" />
+							<label for="slew_angle_a">Slew angle:</label>
+							<input class="angle" id="slew_angle_a" name="slew_angle_a" type="number" min="0" value="" />
 							<span></span>
-							<input id="slew_angle_b" name="slew_angle_b" type="number" min="0" value="" />
+							<input class="angle" id="slew_angle_b" name="slew_angle_b" type="number" min="0" value="" />
+							<span class="unit" id="slew_angle_a_unit">°</span>
 						</div>
 						<div class="input_row">
-							Single crane capacity (incl. DAF=1.1) [t]:
-							<span class="computed" id="crane_capacity_a">&nbsp;</span>
+							Single crane capacity (incl. DAF=1.1):
+							<span class="computed mass" id="crane_capacity_a">&nbsp;</span>
 							<span></span>
-							<span class="computed" id="crane_capacity_b">&nbsp;</span>
+							<span class="computed mass" id="crane_capacity_b">&nbsp;</span>
+							<span class="unit" id="crane_capacity_a_unit"></span>
 						</div>
 						<div class="input_row">
-							Spare capacity [t]:
-							<span class="computed" id="spare_capacity_a">&nbsp;</span>
+							Spare capacity:
+							<span class="computed mass" id="spare_capacity_a">&nbsp;</span>
 							<span></span>
-							<span class="computed" id="spare_capacity_b">&nbsp;</span>
+							<span class="computed mass" id="spare_capacity_b">&nbsp;</span>
+							<span class="unit" id="spare_capacity_a_unit">&nbsp;</span>
 						</div>
 					</div>
 				</div>
@@ -111,19 +141,19 @@
 						<div class="input_row">
 							<label for="weight_uncertainty_factor">Weight uncertainty factor:</label>
 							<span></span>
-							<input id="weight_uncertainty_factor" name="weight_uncertainty_factor" type="number" value="1.015" />
+							<input class="factor" id="weight_uncertainty_factor" name="weight_uncertainty_factor" type="number" step="0.001" value="" />
 							<span></span>
 						</div>
 						<div class="input_row">
 							<label for="cog_uncertainty_factor">CoG uncertainty factor:</label>
 							<span></span>
-							<input id="cog_uncertainty_factor" name="cog_uncertainty_factor" type="number" value="1.01" />
+							<input class="factor" id="cog_uncertainty_factor" name="cog_uncertainty_factor" type="number" step="0.001" value="" />
 							<span></span>
 						</div>
 						<div class="input_row">
 							<label for="tilt_factor">Tilt factor:</label>
 							<span></span>
-							<input id="tilt_factor" name="tilt_factor" type="number" value="1.02" />
+							<input class="factor" id="tilt_factor" name="tilt_factor" type="number" step="0.001" value="" />
 							<span></span>
 						</div>
 					</div>
@@ -133,52 +163,57 @@
 					<h2 class="section-title">Module</h2>
 					<div class="section_container">
 						<div class="input_row">
-							<label for="weight">Module lift weight [t]:</label>
+							<label for="weight">Module lift weight:</label>
 							<span></span>
-							<input id="weight" name="weight" type="number" value="10375" />
-							<span></span>
+							<input class="mass" id="weight" name="weight" type="number" value="" />
+							<span class="unit" id="weight_unit">&nbsp;</span>
 						</div>
 						<div class="input_row">
-							Factored lift weight [t]:
+							Factored lift weight:
 							<span></span>
-							<span class="computed" id="factored_lift_weight">&nbsp;</span>
-							<span></span>
+							<span class="computed mass" id="factored_lift_weight">&nbsp;</span>
+							<span class="unit" id="factored_lift_weight_unit">&nbsp;</span>
 						</div>
 						<div class="input_row">
-							<label for="rigging_weight_a">Rigging weight [t]:</label>
-							<input id="rigging_weight_a" name="rigging_weight_a" type="number" value="380" />
-							<span class="computed" id="combined_rigging_weight">&nbsp;</span>
-							<input id="rigging_weight_b" name="rigging_weight_b" type="number" value="495" />
+							<label for="rigging_weight_a">Rigging weight:</label>
+							<input class="mass" id="rigging_weight_a" name="rigging_weight_a" type="number" value="" />
+							<span class="computed mass" id="combined_rigging_weight">&nbsp;</span>
+							<input class="mass" id="rigging_weight_b" name="rigging_weight_b" type="number" value="" />
+							<span class="unit" id="rigging_weight_a_unit">&nbsp;</span>
 						</div>
 						<div class="input_row">
-							<label for="lift_point_a">Lift points [m]:</label>
-							<input id="lift_point_a" name="lift_point_a" type="number" value="41.050" />
+							<label for="lift_point_a">Lift points:</label>
+							<input class="distance" id="lift_point_a" name="lift_point_a" type="number" value="" />
 							<span></span>
-							<input id="lift_point_b" name="lift_point_b" type="number" value="82" />
+							<input class="distance" id="lift_point_b" name="lift_point_b" type="number" value="" />
+							<span class="unit" id="lift_point_a_unit">&nbsp;</span>
 						</div>
 						<div class="input_row">
-							<label for="float_a">Float (+/-) [m]:</label>
-							<input id="float_a" name="float_a" type="number" value="0" />
+							<label for="float_a">Float (+/-):</label>
+							<input class="distance" id="float_a" name="float_a" type="number" value="" />
 							<span></span>
-							<input id="float_b" name="float_b" type="number" value="0" />
+							<input class="distance" id="float_b" name="float_b" type="number" value="" />
+							<span class="unit" id="float_a_unit">&nbsp;</span>
 						</div>
 						<div class="input_row">
-							<label for="cog">CoG [m]:</label>
+							<label for="cog">CoG:</label>
 							<span></span>
-							<input id="cog" name="cog" type="number" value="61.646" />
-							<span></span>
+							<input class="distance" id="cog" name="cog" type="number" value="" />
+							<span class="unit" id="cog_unit">&nbsp;</span>
 						</div>
 						<div class="input_row">
-							<label for="module_cog_offset_a">Module CoG offset [t]:</label>
-							<input id="module_cog_offset_a" name="module_cog_offset_a" type="number" value="0.5" />
+							<label for="cog_offset_a">Module CoG offset:</label>
+							<input class="distance" id="cog_offset_a" name="cog_offset_a" type="number" value="" />
 							<span></span>
-							<input id="module_cog_offset_b" name="module_cog_offset_b" type="number" value="0.5" />
+							<input class="distance" id="cog_offset_b" name="cog_offset_b" type="number" value="" />
+							<span class="unit" id="cog_offset_a_unit">&nbsp;</span>
 						</div>
 						<div class="input_row">
-							Distance from CoG to lift point [m]:
-							<span class="computed distance" id="distance_cog_a">&nbsp;</span>
-							<span class="computed distance" id="distance_cog_ab">&nbsp;</span>
-							<span class="computed distance" id="distance_cog_b">&nbsp;</span>
+							Distance from CoG to lift point:
+							<span class="computed distance" id="distance_lift_point_a_to_cog">&nbsp;</span>
+							<span class="computed distance" id="distance_lift_point_a_to_lift_point_b">&nbsp;</span>
+							<span class="computed distance" id="distance_lift_point_b_to_cog">&nbsp;</span>
+							<span class="unit" id="distance_lift_point_a_to_cog_unit">&nbsp;</span>
 						</div>
 					</div>
 				</div>
@@ -186,11 +221,10 @@
 				<div class="section">
 					<div class="section_container">
 						<div class="input_row">
-    						<span class="weight_margin">Module weight margin [t]:</span>
-
+    						<span class="weight_margin">Module weight margin:</span>
     						<span></span>
-    						<span class="weight_margin computed" id="module_weight_margin" aria-live="polite"></span>
-    						<span></span>
+    						<span class="weight_margin computed mass" id="weight_margin" aria-live="polite"></span>
+							<span class="unit" id="weight_margin_unit"></span>
     						<span></span>
 						</div>
 					</div>
@@ -205,58 +239,67 @@
 				<div class="details-section" id="detailsSection" hidden>
 					<div class="section_container">
 						<div class="input_row">
-							Distance from CoG to lift point [m]:
+							Distance from CoG to lift point:
 							<span class="computed distance" id="distance_cog_lpa">&nbsp;</span>
 							<span class="computed distance" id="total_distance_cog_lp">&nbsp;</span>
 							<span class="computed distance" id="distance_cog_lpb">&nbsp;</span>
+							<span class="unit" id="distance_cog_lpa_unit">&nbsp;</span>
 						</div>
 						<div class="input_row">
-							Slew angle [deg]:
-							<span class="computed" id="slew_angle_a_res">&nbsp;</span>
+							Slew angle:
+							<span class="computed angle" id="slew_angle_a_res">&nbsp;</span>
 							<span></span>
-							<span class="computed" id="slew_angle_b_res">&nbsp;</span>
+							<span class="computed angle" id="slew_angle_b_res">&nbsp;</span>
+							<span class="unit" id="slew_angle_a_res_unit">°</span>
 						</div>
 						<div class="input_row">
-							Effective lift radius [m]:
+							Effective lift radius:
 							<span class="computed distance" id="effective_lift_radius_a">&nbsp;</span>
 							<span></span>
 							<span class="computed distance" id="effective_lift_radius_b">&nbsp;</span>
+							<span class="unit" id="effective_lift_radius_a_unit">&nbsp;</span>
 						</div>
 						<div class="input_row">
-							Distance, CoG A offs to lift point [m]:
-							<span class="computed distance" id="distance_coga_a">&nbsp;</span>
+							Distance, CoG A offs to lift point:
+							<span class="computed distance" id="distance_lift_point_a_to_cog_offset_towards_a">&nbsp;</span>
 							<span class="computed distance" id="distance_coga_ab">&nbsp;</span>
-							<span class="computed distance" id="distance_coga_b">&nbsp;</span>
+							<span class="computed distance" id="distance_lift_point_b_to_cog_offset_towards_a">&nbsp;</span>
+							<span class="unit" id="distance_lift_point_a_to_cog_offset_towards_a_unit">&nbsp;</span>
 						</div>
 						<div class="input_row">
-							Distance, CoG B offs to lift point [m]:
-							<span class="computed distance" id="distance_cogb_a">&nbsp;</span>
+							Distance, CoG B offs to lift point:
+							<span class="computed distance" id="distance_lift_point_a_to_cog_offset_towards_b">&nbsp;</span>
 							<span class="computed distance" id="distance_cogb_ab">&nbsp;</span>
-							<span class="computed distance" id="distance_cogb_b">&nbsp;</span>
+							<span class="computed distance" id="distance_lift_point_b_to_cog_offset_towards_b">&nbsp;</span>
+							<span class="unit" id="distance_lift_point_a_to_cog_offset_towards_b_unit">&nbsp;</span>
 						</div>
 						<div class="input_row">
-							True hook load, CoG A offset [t]:
-							<span class="computed" id="true_hook_load_a_cog_a">&nbsp;</span>
-							<span class="computed" id="total_true_hook_load_cog_a">&nbsp;</span>
-							<span class="computed" id="true_hook_load_b_cog_a">&nbsp;</span>
+							True hook load, CoG A offset:
+							<span class="computed mass" id="true_hookload_a_with_cog_offset_towards_a">&nbsp;</span>
+							<span class="computed mass" id="combined_true_hookload_cog_offset_towards_a">&nbsp;</span>
+							<span class="computed mass" id="true_hookload_b_with_cog_offset_towards_a">&nbsp;</span>
+							<span class="unit" id="true_hookload_a_with_cog_offset_towards_a_unit">&nbsp;</span>
 						</div>
 						<div class="input_row">
-							True hook load, CoG B offset [t]:
-							<span class="computed" id="true_hook_load_a_cog_b">&nbsp;</span>
-							<span class="computed" id="total_true_hook_load_cog_b">&nbsp;</span>
-							<span class="computed" id="true_hook_load_b_cog_b">&nbsp;</span>
+							True hook load, CoG B offset:
+							<span class="computed mass" id="true_hookload_a_with_cog_offset_towards_b">&nbsp;</span>
+							<span class="computed mass" id="combined_true_hookload_cog_offset_towards_b">&nbsp;</span>
+							<span class="computed mass" id="true_hookload_b_with_cog_offset_towards_b">&nbsp;</span>
+							<span class="unit" id="true_hookload_a_with_cog_offset_towards_b_unit">&nbsp;</span>
 						</div>
 						<div class="input_row">
-							Factored hook load, CoG A offset [t]:
-							<span class="computed" id="factored_hook_load_a_cog_a">&nbsp;</span>
-							<span class="computed" id="total_factored_hook_load_cog_a">&nbsp;</span>
-							<span class="computed" id="factored_hook_load_b_cog_a">&nbsp;</span>
+							Factored hook load, CoG A offset:
+							<span class="computed mass" id="factored_hookload_a_with_cog_offset_towards_a">&nbsp;</span>
+							<span class="computed mass" id="combined_factored_hookload_cog_offset_towards_a">&nbsp;</span>
+							<span class="computed mass" id="factored_hookload_b_with_cog_offset_towards_a">&nbsp;</span>
+							<span class="unit" id="factored_hookload_a_with_cog_offset_towards_a_unit">&nbsp;</span>
 						</div>
 						<div class="input_row">
-							Factored hook load, CoG B offset [t]:
-							<span class="computed" id="factored_hook_load_a_cog_b">&nbsp;</span>
-							<span class="computed" id="total_factored_hook_load_cog_b">&nbsp;</span>
-							<span class="computed" id="factored_hook_load_b_cog_b">&nbsp;</span>
+							Factored hook load, CoG B offset:
+							<span class="computed mass" id="factored_hookload_a_with_cog_offset_towards_b">&nbsp;</span>
+							<span class="computed mass" id="combined_factored_hookload_cog_offset_towards_b">&nbsp;</span>
+							<span class="computed mass" id="factored_hookload_b_with_cog_offset_towards_b">&nbsp;</span>
+							<span class="unit" id="factored_hookload_a_with_cog_offset_towards_b_unit">&nbsp;</span>
 						</div>
 					</div>
 				</div>
