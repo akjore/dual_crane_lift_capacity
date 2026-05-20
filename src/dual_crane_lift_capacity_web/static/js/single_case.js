@@ -794,6 +794,79 @@ async function handleYamlFile(file) {
     await performCalcs();
 }
 
+// Download current input for liftcases as yaml
+function downloadYaml() {
+    const yaml = buildYaml(liftcasesJson);
+
+    const blob = new Blob([yaml], { type: "text/yaml" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "liftcases.yaml";
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+function buildYaml(cases) {
+    let lines = [];
+    lines.push("cases:");
+
+    cases.forEach(c => {
+        lines.push(`  - case: ${c.case}`);
+
+        // simple fields
+        lines.push(`    crane_curve_a: ${c.crane_curve_a}`);
+        lines.push(`    crane_curve_b: ${c.crane_curve_b}`);
+
+        // quantities
+        addQuantity(lines, "crane_radius_a", c.crane_radius_a);
+        addQuantity(lines, "crane_radius_b", c.crane_radius_b);
+        addQuantity(lines, "rigging_weight_a", c.rigging_weight_a);
+        addQuantity(lines, "rigging_weight_b", c.rigging_weight_b);
+        addQuantity(lines, "lift_point_a", c.lift_point_a);
+        addQuantity(lines, "lift_point_b", c.lift_point_b);
+        addQuantity(lines, "weight", c.weight);
+        addQuantity(lines, "cog", c.cog);
+
+        // floats
+        addQuantityOptional(lines, "float_a", c.float_a);
+        addQuantityOptional(lines, "float_b", c.float_b);
+
+        // factors (dimensionless)
+        addScalar(lines, "weight_uncertainty_factor", c.weight_uncertainty_factor);
+        addScalar(lines, "cog_uncertainty_factor", c.cog_uncertainty_factor);
+        addScalar(lines, "tilt_factor", c.tilt_factor);
+
+        // envelope
+        if (c.cog_envelope?.value) {
+            const [min, max] = c.cog_envelope.value;
+            lines.push(
+                `    cog_envelope: [${min} ${c.cog_envelope.unit}, ${max} ${c.cog_envelope.unit}]`
+            );
+        }
+    });
+
+    return lines.join("\n");
+}
+
+//      Helper functions
+function addQuantity(lines, name, q) {
+    if (!q) return;
+    lines.push(`    ${name}: ${q.value} ${q.unit}`);
+}
+
+function addQuantityOptional(lines, name, q) {
+    if (!q || q.value == null) return;
+    lines.push(`    ${name}: ${q.value} ${q.unit}`);
+}
+
+function addScalar(lines, name, q) {
+    if (!q) return;
+    lines.push(`    ${name}: ${q.value}`);
+}
+
 // Add the feather icons to the web page
 feather.replace();
 
@@ -811,6 +884,9 @@ document.addEventListener("click", (e) => {
         menu.hidden = true;
     }
 });
+
+// Downloading the lift case input data as yaml
+document.getElementById("downloadYamlBtn").addEventListener("click", downloadYaml);
 
 // variables
 let liftcasesJson = null;
