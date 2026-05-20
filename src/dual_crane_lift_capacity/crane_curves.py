@@ -3,6 +3,7 @@ import logging
 import os
 from importlib import resources as impresources
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
 import pint
@@ -16,9 +17,9 @@ logger = logging.getLogger(__name__)
 class CraneCurves:
     """Load crane curves and process data for further use."""
 
-    _crane_radii = {}
-    _crane_capacities = {}
-    _crane_curve_data = None
+    _crane_radii: ClassVar[dict] = {}
+    _crane_capacities: ClassVar[dict] = {}
+    _crane_curve_data: ClassVar[dict] = None
 
 
     @classmethod
@@ -108,7 +109,7 @@ class CraneCurves:
 
         :returns: crane capacity at a given radius
         """
-        if not curve in cls.crane_curve_ids():
+        if curve not in cls.crane_curve_ids():
             logger.error(
                 f"Known crane curves are: {list(cls.crane_curve_ids)}. Requested crane curve is: {curve}",
             )

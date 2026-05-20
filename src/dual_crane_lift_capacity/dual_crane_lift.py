@@ -4,11 +4,12 @@ from __future__ import annotations
 import dataclasses
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-import matplotlib as mpl
-import matplotlib.pyplot as plt
+from . import dual_crane_lift_capacity, dual_crane_lift_capacity_plot, lift_cases
 
-from . import crane_curves, dual_crane_lift_capacity, dual_crane_lift_capacity_plot, lift_cases
+if TYPE_CHECKING:
+    import matplotlib.pyplot as plt
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -29,10 +30,6 @@ class DualCraneLift:
         :returns DualLiftingCases:         wrapper class for input data, computed values and figures
         """
         logging.getLogger("mpl.font_manager").disabled = True
-
-        # what does this do?
-#        if not interactive:
-#            mpl.use("agg")
 
         self.liftcases = liftcases
         self.dual_crane_lift_capacity_results = dual_crane_lift_capacity.DualCraneLiftCapacity(liftcases)
@@ -98,8 +95,6 @@ if __name__ == "__main__":
 
             res = DualCraneLift(liftcases)
 
-            print("check if plots are created when accessing plots")
-            print(res.plots)
             for case, plot in res.plots.items():
                 plot.savefig(f"{case}.png")
         except Exception:
