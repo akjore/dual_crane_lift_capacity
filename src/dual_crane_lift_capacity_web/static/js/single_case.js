@@ -26,7 +26,7 @@ const DATASET_MAP = [
     "cog",
     "cog_envelope",
     "cog_limit_at_given_weight",
-    "lift_capacity_at_cog"
+    "lift_capacity_at_cog_and_env"
 ];
 
 function updateGUI(evnt) {
@@ -40,7 +40,15 @@ function updateGUI(evnt) {
 function updateField(id, data) {
     // Update GUI
     const el = document.getElementById(id);
-    if (!el || !data || typeof data.value !== "number") return;
+
+//    if (!el || !data || typeof data.value !== "number") return;
+    if (!el) return;
+
+    if (!data || typeof data.value !== "number") {
+        // clear input field
+        el.value = "";
+        return;
+    }
 
     const decimals =
         el.classList.contains("distance") ||
@@ -86,7 +94,7 @@ function updateInputs() {
 }
 
 function updateResults() {
-    // This list the html fields to be updated. Requires that the JSON object with the results uses the same field names.
+    // This lists the html fields to be updated. Requires that the JSON object with the results uses the same field names.
     const resultFields = [
         "spare_capacity_a",
         "spare_capacity_b",
@@ -186,7 +194,6 @@ async function performCalcs(evnt) {
     // Function aquires either a serialised yaml file or a json object, performs the calculations, and returns results
 
     // Get the serialized yaml/json input describing the cases
-//    if(evnt && (evnt.target.tagName == "INPUT" || evnt.target.tagName == "SELECT")) {
     if (evnt && ["INPUT", "SELECT"].includes(evnt.target.tagName)) {
         // If an input box was modified, then process the json
         window.casesJsonStr = JSON.stringify(liftcasesJson);
@@ -224,7 +231,7 @@ async function initialize() {
     // const wheel_url = "http://localhost:8000/dual_crane_lift_capacity-0.1.1.post45+git.f3b0c79e.dirty-py3-none-any.whl";
     // const wheel_url = "http://localhost:5000/dual_crane_lift_capacity-0.1.1.post45+git.f3b0c79e.dirty-py3-none-any.whl";
     // const wheel_url = "{{ url_for('static', filename='dual_crane_lift_capacity-0.1.1.post45+git.f3b0c79e.dirty-py3-none-any.whl') }}"
-    const wheel_url = "http://localhost:5000/static/dual_crane_lift_capacity-0.1.1.post45+git.f3b0c79e.dirty-py3-none-any.whl";
+    const wheel_url = "http://localhost:5000/static/dual_crane_lift_capacity-0.1.1.post46+git.12a258e9.dirty-py3-none-any.whl";
 
     await micropip.install(wheel_url);
 
@@ -395,6 +402,44 @@ function initializeChart() {
 		}]
 	};
 
+    // Settings for projection lines
+    const projectionLineSettings = {
+        type: "line",
+        borderColor: annotationColour,
+        borderWidth: 1,
+        borderDash: [5, 5],
+        display: true,
+    }
+
+    // Settings for dimension lines
+    let dimensionLineSettings = {
+        type: "line",
+        borderColor: annotationColour,
+        borderWidth: 1,
+        display: true,
+        label: {
+            display: true,
+            position: "center",
+            backgroundColor: backgroundColour,
+            color: annotationColour,
+            content: "",
+        },
+        arrowHeads: {
+            end: {
+                display: true,
+                fill: true,
+                length: 6,
+                width: 4
+            },
+            start: {
+                display: true,
+                fill: true,
+                length: 6,
+                width: 4
+            }
+        }
+    }
+
 	// initialize empty chart
 	let chart = new Chart(ctx, {
 		type: "scatter",
@@ -417,201 +462,28 @@ function initializeChart() {
                 annotation: {
                     annotations: {
                         // weight margin at CoG
-                        weight_margin_1: {
-                            type: "line",
-                            borderColor: annotationColour,
-                            borderWidth: 1,
-                            borderDash: [5, 5],
-                            display: true,
-                        },
-                        weight_margin_2: {
-                            type: "line",
-                            borderColor: annotationColour,
-                            borderWidth: 1,
-                            borderDash: [5, 5],
-                            display: true,
-                        },
-                        weight_margin_3: {
-                            type: "line",
-                            borderColor: annotationColour,
-                            borderWidth: 1,
-                            display: true,
-                            label: {
-                                display: true,
-                                position: "center",
-                                backgroundColor: backgroundColour,
-                                color: annotationColour,
-                            },
-                            arrowHeads: {
-                                end: {
-                                    display: true,
-                                    fill: true,
-                                    length: 6,
-                                    width: 4
-                                },
-                                start: {
-                                    display: true,
-                                    fill: true,
-                                    length: 6,
-                                    width: 4
-                                }
-                            }
-                        },
+                        weight_margin_1: JSON.parse(JSON.stringify(projectionLineSettings)), //needed to create a copy of the settings
+                        weight_margin_2: JSON.parse(JSON.stringify(projectionLineSettings)),
+                        weight_margin_3: JSON.parse(JSON.stringify(dimensionLineSettings)),
+
                         // weight margin at CoG envelope
-                        weight_margin_env_1: {
-                            type: "line",
-                            borderColor: annotationColour,
-                            borderWidth: 1,
-                            borderDash: [5, 5],
-                            display: true,
-                        },
-                        weight_margin_env_2: {
-                            type: "line",
-                            borderColor: annotationColour,
-                            borderWidth: 1,
-                            borderDash: [5, 5],
-                            display: true,
-                        },
-                        weight_margin_env_3: {
-                            type: "line",
-                            borderColor: annotationColour,
-                            borderWidth: 1,
-                            display: true,
-                            label: {
-                                display: true,
-                                position: "center",
-                                backgroundColor: backgroundColour,
-                                color: annotationColour,
-                            },
-                            arrowHeads: {
-                                end: {
-                                    display: true,
-                                    fill: true,
-                                    length: 6,
-                                    width: 4
-                                },
-                                start: {
-                                    display: true,
-                                    fill: true,
-                                    length: 6,
-                                    width: 4
-                                }
-                            }
-                        },
+                        weight_margin_env_1: JSON.parse(JSON.stringify(projectionLineSettings)),
+                        weight_margin_env_2: JSON.parse(JSON.stringify(projectionLineSettings)),
+                        weight_margin_env_3: JSON.parse(JSON.stringify(dimensionLineSettings)),
+
                         // CoG limits at current weight
-                        cog_limit_1: {
-                            type: "line",
-                            borderColor: annotationColour,
-                            borderWidth: 1,
-                            borderDash: [5, 5],
-                            display: true,
-                        },
-                        cog_limit_2: {
-                            type: "line",
-                            borderColor: annotationColour,
-                            borderWidth: 1,
-                            borderDash: [5, 5],
-                            display: true,
-                        },
-                        cog_limit_3: {
-                            type: "line",
-                            borderColor: annotationColour,
-                            borderWidth: 1,
-                            borderDash: [5, 5],
-                            display: true,
-                        },
-                        cog_limit_4: {
-                            type: "line",
-                            borderColor: annotationColour,
-                            borderWidth: 1,
-                            display: true,
-                            label: {
-                                display: true,
-                                position: "center",
-                                backgroundColor: backgroundColour,
-                                color: annotationColour,
-                            },
-                            arrowHeads: {
-                                end: {
-                                    display: true,
-                                    fill: true,
-                                    length: 6,
-                                    width: 4
-                                },
-                                start: {
-                                    display: true,
-                                    fill: true,
-                                    length: 6,
-                                    width: 4
-                                }
-                            }
-                        },
-                        cog_limit_5: {
-                            type: "line",
-                            borderColor: annotationColour,
-                            borderWidth: 1,
-                            display: true,
-                            label: {
-                                display: true,
-                                position: "center",
-                                backgroundColor: backgroundColour,
-                                color: annotationColour,
-                            },
-                            arrowHeads: {
-                                end: {
-                                    display: true,
-                                    fill: true,
-                                    length: 6,
-                                    width: 4
-                                },
-                                start: {
-                                    display: true,
-                                    fill: true,
-                                    length: 6,
-                                    width: 4
-                                }
-                            }
-                        },
+                        cog_limit1_1: JSON.parse(JSON.stringify(projectionLineSettings)),
+                        cog_limit1_2: JSON.parse(JSON.stringify(projectionLineSettings)),
+                        cog_limit1_3: JSON.parse(JSON.stringify(dimensionLineSettings)),
+
+                        cog_limit2_1: JSON.parse(JSON.stringify(projectionLineSettings)),
+                        cog_limit2_2: JSON.parse(JSON.stringify(projectionLineSettings)),
+                        cog_limit2_3: JSON.parse(JSON.stringify(dimensionLineSettings)),
+
                         // CoG offset from peak
-                        cog_peak_offset_1: {
-                            type: "line",
-                            borderColor: annotationColour,
-                            borderWidth: 1,
-                            borderDash: [5, 5],
-                        },
-                        cog_peak_offset_2: {
-                            type: "line",
-                            borderColor: annotationColour,
-                            borderWidth: 1,
-                            borderDash: [5, 5],
-                        },
-                        cog_peak_offset_3: {
-                            type: "line",
-                            borderColor: annotationColour,
-                            borderWidth: 1,
-                            label: {
-                                display: true,
-                                position: "center",
-                                backgroundColor: backgroundColour,
-                                color: annotationColour,
-                            },
-                            arrowHeads: {
-                                end: {
-                                    display: true,
-                                    fill: true,
-                                    length: 6,
-                                    width: 4
-                                },
-                                start: {
-                                    display: true,
-                                    fill: true,
-                                    length: 6,
-                                    width: 4
-                                }
-                            }
-                        },
-
-
+                        cog_peak_offset_1: JSON.parse(JSON.stringify(projectionLineSettings)),
+                        cog_peak_offset_2: JSON.parse(JSON.stringify(projectionLineSettings)),
+                        cog_peak_offset_3: JSON.parse(JSON.stringify(dimensionLineSettings)),
                     }
                 }
 			},
@@ -662,7 +534,7 @@ function buildChartData(caseData, resultData) {
         cog: [{x: cog, y: weight}],
         cog_envelope: [{x: cog_env[0], y: weight}, {x: cog_env[1], y: weight}],
         cog_limit_at_given_weight: [{x: cog_limit_at_weight[0], y: weight}, {x: cog_limit_at_weight[1], y: weight}],
-        lift_capacity_at_cog: [{x: cog, y: lift_capacity_at_cog}, {x: cog_env[idx], y: lift_capacity_at_cog_envelope[idx]}],
+        lift_capacity_at_cog_and_env: [{x: cog, y: lift_capacity_at_cog}, {x: cog_env[idx], y: lift_capacity_at_cog_envelope[idx]}],
     };
 };
 
@@ -680,8 +552,29 @@ function updateDatasets(chartData) {
     ];
 }
 
-function updateAnnotation(annotation, xmin, xmax, ymin, ymax, label=null) {
+function updateAnnotation(annotation, p1, p2, dimx, dimy) {
+    // Update an annotation.
+    // 3 components involved - one dim line, and two projection lines
+    // dimx, dimy: if dimx provided, then the dim line is vertical, else horizontal
+    const visible = p1.x != null && p1.y != null && p2.x != null && p2.y != null;
+
+    if(dimx) {
+        updateAnnotationComponent(annotation+"_1", p1.x, dimx, p1.y, p1.y, visible);
+        updateAnnotationComponent(annotation+"_2", p2.x, dimx, p2.y, p2.y, visible);
+        updateAnnotationComponent(annotation+"_3", dimx, dimx, p1.y, p2.y, visible, true);
+    } else {
+        updateAnnotationComponent(annotation+"_1", p1.x, p1.x, p1.y, dimy, visible);
+        updateAnnotationComponent(annotation+"_2", p2.x, p2.x, p2.y, dimy, visible);
+        updateAnnotationComponent(annotation+"_3", p1.x, p2.x, dimy, dimy, visible, true);
+    }
+}
+
+function updateAnnotationComponent(annotation, xmin, xmax, ymin, ymax, visible=true, label=null) {
     const annotations = chart.options.plugins.annotation.annotations;
+
+    annotations[annotation].display = visible;
+
+    if(!visible) return;
 
     annotations[annotation].xMin = xmin;
     annotations[annotation].xMax = xmax;
@@ -689,10 +582,14 @@ function updateAnnotation(annotation, xmin, xmax, ymin, ymax, label=null) {
     annotations[annotation].yMax = ymax;
 
     if(label) {
-        annotations[annotation].label.content = label;
+        let labelval = null;
+        if(xmin != xmax) {
+            labelval = Math.abs(xmax - xmin).toFixed(3);
+        } else {
+            labelval = (ymax - ymin).toFixed(0);
+        }
+        annotations[annotation].label.content = labelval;
     }
-
-    annotations[annotation].display = xmin != null && xmax != null && ymin != null && ymax != null;
 }
 
 function updateChart() {
@@ -716,109 +613,31 @@ function updateChart() {
     // Update chart title
     chart.options.plugins.title.text = caseData.case + " - " + caseData.crane_curve_a;
 
-    // Update dim lines - weight margin at CoG
+    // Update annotations - projection lines and dimension lines
     const annotations = chart.options.plugins.annotation.annotations;
 
     const xmin = chartData.crane_capacity_curve_pt1[0].x;
     const xmax = chartData.crane_capacity_curve_pt2.slice(-1)[0].x;
     const ymin = Math.min(chartData.crane_capacity_curve_pt1[0].y, chartData.crane_capacity_curve_pt2.slice(-1)[0].y);
     const ymax = chartData.crane_capacity_curve_pt2[0].y;
-    const x1 = xmin - 0.1 * (xmax - xmin);
-    const x2 = xmax + 0.1 * (xmax - xmin);
-    const y1 = ymin;
-    const y2 = ymax + 0.1 * (ymax - ymin);
+    const x1 = xmin - 0.06 * (xmax - xmin);
+    const x2 = xmax + 0.06 * (xmax - xmin);
+    const y1 = ymin + 0.02 * (ymax - ymin);
+    const y2 = ymax + 0.06 * (ymax - ymin);
 
-    let xMin = chartData.cog_limit_at_given_weight[1].x;
-    let xMax = x2;
-    let yMin = chartData.cog[0].y;
-    let yMax = yMin;
-    updateAnnotation("weight_margin_1", xMin, xMax, yMin, yMax);
+    //      Update dim lines - weight margin at CoG
+    updateAnnotation("weight_margin", chartData.cog_limit_at_given_weight[1], chartData.lift_capacity_at_cog_and_env[0], x2, null);
 
-    xMin = chartData.lift_capacity_at_cog[0].x;
-    xMax = x2;
-    yMin = chartData.lift_capacity_at_cog[0].y;
-    yMax = yMin;
-    updateAnnotation("weight_margin_2", xMin, xMax, yMin, yMax);
+    //      Update dim lines - weight margin at CoG env
+//    updateAnnotation("weight_margin_env", chartData.cog_limit_at_given_weight[0], chartData.lift_capacity_at_cog[1], x1, null);
+    updateAnnotation("weight_margin_env", chartData.cog_limit_at_given_weight[0], chartData.lift_capacity_at_cog_and_env[1], x1, null);
 
-    xMin = x2;
-    xMax = x2;
-    yMin = chartData.cog[0].y;
-    yMax = chartData.lift_capacity_at_cog[0].y;
-    let label = (chartData.lift_capacity_at_cog[0].y - chartData.cog[0].y).toFixed(0);
-    updateAnnotation("weight_margin_3", xMin, xMax, yMin, yMax, label);
+    //      Update dim lines - CoG limits at current weight
+    updateAnnotation("cog_limit1", chartData.cog_limit_at_given_weight[0], chartData.cog[0], null, y1);
+    updateAnnotation("cog_limit2", chartData.cog_limit_at_given_weight[1], chartData.cog[0], null, y1);
 
-    // Update dim lines - weight margin at CoG env
-    xMin = chartData.cog_limit_at_given_weight[0].x;
-    xMax = x1;
-    yMin = chartData.cog[0].y;
-    yMax = yMin;
-    updateAnnotation("weight_margin_env_1", xMin, xMax, yMin, yMax);
-
-    xMin = chartData.lift_capacity_at_cog[1].x;
-    xMax = x1;
-    yMin = chartData.lift_capacity_at_cog[1].y;
-    yMax = yMin;
-    updateAnnotation("weight_margin_env_2", xMin, xMax, yMin, yMax);
-
-    xMin = x1;
-    xMax = x1;
-    yMin = chartData.cog[0].y;
-    yMax = chartData.lift_capacity_at_cog[1].y;
-    label = (chartData.lift_capacity_at_cog[1].y - chartData.cog[0].y).toFixed(0);
-    updateAnnotation("weight_margin_env_3", xMin, xMax, yMin, yMax, label);
-
-    // Update dim lines - CoG limits at current weight
-    xMin = chartData.cog_limit_at_given_weight[0].x;
-    xMax = xMin;
-    yMin = y1;
-    yMax = chartData.cog[0].y;
-    updateAnnotation("cog_limit_1", xMin, xMax, yMin, yMax);
-
-    xMin = chartData.cog[0].x;
-    xMax = xMin;
-    yMin = y1;
-    yMax = chartData.cog[0].y;
-    updateAnnotation("cog_limit_2", xMin, xMax, yMin, yMax);
-
-    xMin = chartData.cog_limit_at_given_weight[1].x;
-    xMax = xMin;
-    yMin = y1;
-    yMax = chartData.cog[0].y;
-    updateAnnotation("cog_limit_3", xMin, xMax, yMin, yMax);
-
-    xMin = chartData.cog_limit_at_given_weight[0].x;
-    xMax = chartData.cog[0].x;
-    yMin = y1;
-    yMax = y1;
-    label = (chartData.cog[0].x - chartData.cog_limit_at_given_weight[0].x).toFixed(3);
-    updateAnnotation("cog_limit_4", xMin, xMax, yMin, yMax, label);
-
-    xMin = chartData.cog[0].x;
-    xMax = chartData.cog_limit_at_given_weight[1].x;
-    yMin = y1;
-    yMax = y1;
-    label = (chartData.cog_limit_at_given_weight[1].x - chartData.cog[0].x).toFixed(3);
-    updateAnnotation("cog_limit_5", xMin, xMax, yMin, yMax, label);
-
-    // Update dim lines - CoG offset from peak
-    xMin = chartData.cog[0].x;
-    xMax = xMin;
-    yMin = chartData.lift_capacity_at_cog[0].y;
-    yMax = y2;
-    updateAnnotation("cog_peak_offset_1", xMin, xMax, yMin, yMax);
-
-    xMin = chartData.crane_capacity_curve_pt2[0].x;
-    xMax = xMin;
-    yMin = chartData.crane_capacity_curve_pt2[0].y;
-    yMax = y2;
-    updateAnnotation("cog_peak_offset_2", xMin, xMax, yMin, yMax);
-
-    xMin = chartData.crane_capacity_curve_pt2[0].x;
-    xMax = chartData.cog[0].x;
-    yMin = y2;
-    yMax = y2;
-    label = (Math.abs(chartData.cog[0].x - chartData.crane_capacity_curve_pt2[0].x)).toFixed(3);
-    updateAnnotation("cog_peak_offset_3", xMin, xMax, yMin, yMax, label);
+    //      Update dim lines - CoG offset from peak
+    updateAnnotation("cog_peak_offset", chartData.cog[0], chartData.crane_capacity_curve_pt2[0], null, y2);
 
     // Update chart
     chart.update();
@@ -834,6 +653,14 @@ form.addEventListener('change', function(evt) {
     const id = evt.target.id;
     const isSelect = evt.target.tagName === "SELECT";
     const val = isSelect ? evt.target.value : Number(evt.target.value);
+
+
+    if (id === "case") {
+        caseIdx = Number(val);
+        updateGUI();   // no backend call needed
+        return;
+    }
+
 
     const data = liftcasesJson?.[caseIdx];
     if (!data) return;
