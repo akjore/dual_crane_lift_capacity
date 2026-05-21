@@ -234,7 +234,7 @@ async function initialize() {
     // const wheel_url = "http://localhost:8000/dual_crane_lift_capacity-0.1.1.post45+git.f3b0c79e.dirty-py3-none-any.whl";
     // const wheel_url = "http://localhost:5000/dual_crane_lift_capacity-0.1.1.post45+git.f3b0c79e.dirty-py3-none-any.whl";
     // const wheel_url = "{{ url_for('static', filename='dual_crane_lift_capacity-0.1.1.post45+git.f3b0c79e.dirty-py3-none-any.whl') }}"
-    const wheel_url = "http://localhost:5000/static/dual_crane_lift_capacity-0.1.1.post46+git.12a258e9.dirty-py3-none-any.whl";
+    const wheel_url = "http://localhost:5000/static/dual_crane_lift_capacity-0.0.1-py3-none-any.whl";
 
     await micropip.install(wheel_url);
 

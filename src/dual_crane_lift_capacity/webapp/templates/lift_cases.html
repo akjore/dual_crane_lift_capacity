@@ -10,7 +10,7 @@
     <meta http-equiv="Expires" content="0">
 	-->
 	<!-- Load stylesheet -->
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 
     <!-- Load Pyodide -->
     <script src="https://cdn.jsdelivr.net/pyodide/v0.29.0/full/pyodide.js"></script>
@@ -24,7 +24,7 @@
 	<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.1/dist/js-yaml.min.js"></script>
 
     <!-- Load .js file to handle gui and interaction with pyodide -->
-	<script type="module" src="{{ url_for('static', filename='js/single_case.js') }}"></script>
+	<script type="module" src="{{ url_for('static', filename='js/lift_cases.js') }}"></script>
 
 	<!-- Feather icons -->
 	<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>

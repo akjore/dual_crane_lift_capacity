@@ -149,54 +149,17 @@ def prepare_dual_crane_lift_plots(filecontent: str) -> tuple:
         raise
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET"])
 @app.route("/dualCraneLift", methods=["GET", "POST"])
 def dual_crane_lift() -> str:       # noqa: PLR0911
     """Main/default page for dual crane lift app.
 
     :returns
         GET: returns the main.html web page
-        POST: processes input files and returns the name of the zip files
     """
     app.logger.debug(f"Entering using method: {request.method}")
-    if request.method == "POST":
-        # check if the post request has the file part
-        if "file" not in request.files:
-            app.logger.error(f"'file' not found in request.files: {request.files}")
-            return "No file provided", 400
 
-        # check a filename was also provided
-        file = request.files["file"]
-        if file.filename == "":
-            app.logger.error("'file' does not have a file name.")
-            return "No filename provided", 400
-
-        # check filename extension is as expected
-        file_ext = Path(file.filename).suffix
-
-        if file_ext not in app.config.get("UPLOAD_EXTENSIONS"):
-            app.logger.error(f"File does not have a valid extension: {file_ext}")
-            return "Invalid file type", 400
-
-        # all well - create plots and return to use
-        app.logger.debug(f"Input file provided: {file.filename}")
-        try:
-            retfiles = prepare_dual_crane_lift_plots(filecontent=file.read())
-        except KeyError as ex:
-            return f"Missing key {ex}", 400
-        except ValueError as ex:
-            return str(ex), 400
-        except Exception as ex:     # noqa: BLE001
-            return repr(ex), 400
-        app.logger.debug(f"Result files created: {retfiles}")
-        tzinfo = ZoneInfo("Europe/Berlin")
-        results = {"datetime": datetime.datetime.now(tz=tzinfo).replace(microsecond=0).isoformat(sep=" "),
-                   "filename": file.filename,
-                   "resultfiles": retfiles}
-        app.logger.debug(f"Returning: {results}")
-        return jsonify(results)
-
-    return render_template("main.html")
+    return render_template("lift_cases.html")
 
 
 @app.route("/get_file/<path:name>", defaults={"folder": None})
