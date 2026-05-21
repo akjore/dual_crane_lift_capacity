@@ -111,8 +111,8 @@ class CraneCurves:
         """
         if curve not in cls.crane_curve_ids():
             logger.error(
-                f"Known crane curves are: {list(cls.crane_curve_ids)}. Requested crane curve is: {curve}",
+                f"Known crane curves are: {list(cls.crane_curve_ids())}. Requested crane curve is: {curve}",
             )
-            raise KeyError
+            raise KeyError(f"Known crane curves are: {list(cls.crane_curve_ids())}. Requested crane curve is: {curve}")
 
         return np.interp(radius, cls.crane_radii()[curve], cls.crane_capacities()[curve], left=np.nan, right=np.nan)

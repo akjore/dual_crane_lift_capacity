@@ -28,8 +28,8 @@ class LiftCase:
     _tilt_factor: pint.Quantity
     _lift_point_a: pint.Quantity
     _lift_point_b: pint.Quantity
-    crane_curve_a: str
-    crane_curve_b: str
+    _crane_curve_a: str
+    _crane_curve_b: str
     _weight: pint.Quantity
     _cog: pint.Quantity
     _cog_envelope: pint.Quantity
@@ -63,8 +63,8 @@ class LiftCase:
         self.float_a = float_a
         self.float_b = float_b
 
-        self.crane_capacity_a = CraneCurves.crane_capacity(self.crane_curve_a, self.crane_radius_a)
-        self.crane_capacity_b = CraneCurves.crane_capacity(self.crane_curve_b, self.crane_radius_b)
+#        self.crane_capacity_a = CraneCurves.crane_capacity(self.crane_curve_a, self.crane_radius_a)
+#        self.crane_capacity_b = CraneCurves.crane_capacity(self.crane_curve_b, self.crane_radius_b)
 
         # Print the variables for debug purposes
         inputs = locals()
@@ -140,6 +140,28 @@ class LiftCase:
         v["crane_curve_b"] = self.crane_curve_b
 
         return dict(zip(v.keys(), (cnv_quantity(li) for li in v.values()), strict=True))
+
+
+    @property
+    def crane_curve_a(self) -> str:
+        """Return the crane curve for crane A."""
+        return self._crane_curve_a
+
+    @crane_curve_a.setter
+    def crane_curve_a(self, value: str) -> None:
+        self._crane_curve_a = value
+        self.crane_capacity_a = CraneCurves.crane_capacity(self.crane_curve_a, self.crane_radius_a)
+
+
+    @property
+    def crane_curve_b(self) -> str:
+        """Return the crane curve for crane A."""
+        return self._crane_curve_b
+
+    @crane_curve_b.setter
+    def crane_curve_b(self, value: str) -> None:
+        self._crane_curve_b = value
+        self.crane_capacity_b = CraneCurves.crane_capacity(self.crane_curve_b, self.crane_radius_b)
 
 
     @property
@@ -403,10 +425,13 @@ class LiftCases:
         self._raw = yaml.load(text, Loader=yaml.SafeLoader)
         self.liftcases = []
 
-        for case in self._raw["cases"]:
-            self.liftcases.append(LiftCase.from_dict(case))
+        try:
+            for case in self._raw["cases"]:
+                self.liftcases.append(LiftCase.from_dict(case))
 
-        return self
+            return self
+        except ValueError:
+            raise ValueError("No input or malformed input provided.")
 
 
     def from_json(self, text: str) -> LiftCases:
