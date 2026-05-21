@@ -74,7 +74,7 @@ jobs:
           if [ -z "$VERSION_PATCH" ]; then
             TAG = ${{ env.TAG_BASE }}
           else
-            VERSION_PATCH=$((VERSION_PATCH + 1))
+            VERSION_PATCH=1
             TAG = "${{ env.TAG_BASE }}-${VERSION_PATCH}"
           fi
           echo "TAG=${TAG}" >> $GITHUB_ENV
