@@ -1,0 +1,451 @@
+body {
+    font-family: Futura, Trebuchet MS, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f9;
+    color: #333;
+}
+
+header {
+    text-align: center;
+    background-color: #eef1f6;
+    color: #1f2a37;
+    padding: 20px;
+}
+
+main {
+    padding: 20px;
+}
+
+form {
+    margin-bottom: 20px;
+}
+
+#fib-result {
+    font-size: 1.2em;
+    color: #008080;
+    margin-top: 10px;
+}
+
+/* ========== Layout frame ========== */
+@page { size: A4 landscape; margin: 12mm; }
+
+.header h1 {
+  margin: 20;
+  font-weight: 700;
+}
+
+.container {
+  display: grid;
+  grid-template-areas:
+    "header header"
+    "input_panel chart_panel"
+    "footer footer";
+  grid-template-columns: 1fr 3fr;
+  gap: 3px;
+  padding: 3px;
+
+
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.container div { background-color: #f4f4f9; }
+
+.container .header {
+  grid-area: header;
+  text-align: center;
+  border-bottom: 1px solid #d8dbe3;
+}
+
+.container .input_panel {
+  grid-area: input_panel;
+  width: 480px;
+  border: 1px solid #d8dbe3;
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 10pt;
+  color: #5F6470;
+}
+
+.container .chart_panel {
+  grid-area: chart_panel;
+  width: 900px;
+/*  height: 700px; */
+  padding-top: 12px;
+  padding-left: 16px;
+}
+
+/* ========== Typography ========== */
+h2 {
+  font-size: 10pt;
+  color: #5F6470;
+  font-weight: bold;
+  margin-top: 24px;
+}
+
+.section-title {
+  margin-top: 24px;
+  margin-bottom: 4px;   /* tighter rhythm */
+  font-size: 12pt;
+  font-weight: 700;
+  color: #1F2A37;
+  line-height: 1.2;
+}
+
+.section-title--inline {
+  font-size: 12pt;
+  font-weight: 700;
+  color: #1F2A37;
+  line-height: 1.2;
+  margin: 0;            /* inline use: no vertical margins */
+  align-self: center;
+}
+
+.section { margin-top: 24px; }
+
+.input_row--header .section-title {
+  margin: 0;
+  font-size: 12pt;
+  color: #1F2A37;
+  font-weight: 700;
+}
+
+.col-head {
+  font-weight: 600;
+  color: #1F2A37;
+  text-align: center;
+  align-self: end;
+}
+
+/* ========== Grids for rows ========== */
+
+/* Layout contract: [label] | Crane A | Common | Crane B | utility */
+.input_row {
+  --cell: 64px;
+  --utility: 24px; /* optional action column (icons, buttons) */
+
+  display: grid;
+  grid-template-columns: 1fr var(--cell) var(--cell) var(--cell) var(--utility);
+  column-gap: 4px;
+  align-items: center;
+  margin-bottom: 4px;
+  width: 100%;
+}
+
+/* ========== Controls: inputs, selects, computed ========== */
+
+input,
+.input_row .computed {
+  height: 20px;
+  line-height: 20px;
+  padding: 1px 2px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+
+/* Small numeric inputs in the 64px columns (and keep them centered) */
+.input_row > input {
+  width: 64px;
+  justify-self: center;         /* center the element in its grid cell */
+}
+
+select {
+  width: 100%;
+  text-align: center;
+}
+
+/* Computed value boxes (uniform look + fixed width) */
+.computed {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+
+  width: 64px !important;
+  min-width: 64px !important;
+  height: 20px;
+
+  padding: 1px 2px;
+  box-sizing: border-box;
+  text-align: center;
+
+  background: #f6f7fb;
+  border: 1px solid #d6d6de;
+  border-radius: 6px;
+}
+
+/* Module weight margin badge – keep centered in its column */
+#module_weight_margin { justify-self: center; }
+
+/* ========== Weight margin color states ========== */
+.weight_margin {
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 12pt;
+  font-weight: 600;
+}
+.weight_margin--negative {
+  background: #fcebec;
+  color: #b73535;
+  border-color: #e6b1b1;
+}
+.weight_margin--positive {
+  background: #eef9f3;
+  color: #2d7544;
+  border-color: #b7e2c8;
+}
+
+/* ========== Focus ========== */
+input:focus,
+select:focus {
+  outline: 2px solid rgba(245,166,35,.25);
+  border-color: #f5a623;
+}
+
+.section:last-of-type {
+    margin-top: 12px;
+}
+
+/* ========== Overlay during initial loading ========== */
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
+    color: white; /* Text color */
+    display: flex; /* Center the text */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    z-index: 1000; /* Ensure it is on top */
+    visibility: hidden; /* Hidden by default */
+}
+
+.details-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: default;
+    user-select: none;
+}
+
+.details-toggle {
+    cursor: pointer;
+    font-size: 12px;
+    transition: transform 0.15s ease;
+}
+
+/* Expanded state */
+.details-toggle.expanded {
+    transform: rotate(90deg);
+}
+
+.details-title {
+    font-size: inherit;
+    font-weight: inherit;
+}
+
+.input_row_case {
+  display: grid;
+  grid-template-columns: 1fr 64px 64px 64px 24px;
+  column-gap: 4px;
+  align-items: center;
+  margin-bottom: 6px;
+  width: 100%;
+}
+
+.case-select {
+  grid-column: 2 / 5;   /* spans A + Common + B */
+  width: 100%;
+}
+
+button {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.case-load-icon {
+  grid-column: 5;
+  justify-self: center;
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.wide-select {
+  grid-column: 2 / 5;   /* A + Common + B */
+  width: 100%;
+  min-width: 0;
+  justify-self: stretch;
+}
+
+.case-load-zone.drag-over {
+  outline: 2px dashed #f5a623;
+  outline-offset: 4px;
+}
+
+.header {
+  position: relative;
+  text-align: center;
+}
+
+/* ========== Section for top right menu icons ========== */
+.header-actions {
+  position: absolute;
+  top: 6px;
+  right: 14px;
+  display: flex;
+  gap: 12px;
+}
+
+.header-actions button,
+.header-actions a {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #666;
+  text-decoration: none;
+}
+
+.header-actions svg {
+  width: 18px;
+  height: 18px;
+}
+
+.header-actions button:hover,
+.header-actions a:hover {
+  color: #000;
+}
+
+.header-actions button {
+  color: #b36b00;
+}
+
+.header-actions {
+  gap: 14px;
+}
+
+.header-actions button:nth-child(2) {
+  margin-right: 10px;
+}
+
+.menu {
+  position: absolute;
+  top: 32px;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  padding: 4px 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.menu button {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.menu button:hover {
+  background: #f0f0f0;
+}
+
+.print-mode #loadYamlDropZone,
+.print-mode #loadYamlBtn,
+.print-mode #yamlFileInput,
+.print-mode .header-actions,
+.print-mode #detailsToggle {
+  display: none !important;
+}
+
+/*
+.print-mode .container {
+  gap: 10px;
+  padding: 10px;
+}
+
+.print-mode {
+  margin: 0;
+}
+
+.print-mode .input-panel {
+  font-size: 12px;
+}
+
+.print-mode canvas {
+  max-height: 500px;
+}
+*/
+
+.print-mode input {
+  border: none;
+  background: transparent;
+}
+
+.print-mode select {
+  appearance: none;
+  border: none;
+}
+
+
+/*
+.print-mode .header h1 {
+  margin-bottom: 5px;
+}
+*/
+
+/*
+.container {
+  align-items: stretch;
+}
+*/
+/*
+#capacity_chart {
+  height: 100% !important;
+}
+*/
+
+.print-mode body {
+    background: white !important;
+}
+
+
+.print-mode .container div {
+    background: white !important;
+}
+
+.print-mode .input_panel {
+    border: 1px solid #ccc;
+}
+
+
+select {
+  height: auto;
+  min-height: 22px;
+  line-height: 1.2;
+  padding: 2px 4px;
+}
+
+.print-mode .computed {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0;
+}
+
+
+.print-mode .computed {
+    font-weight: 600;
+}
+
+
+.print-mode .input-row {
+    margin-bottom: 5px;
+}
