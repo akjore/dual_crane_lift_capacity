@@ -56,4 +56,33 @@ jobs:
         git add -f ./dist/*.whl
         git commit -m 'pushing new wheel'
         git push
+
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create tag base
+        id: tag
+        run: echo "TAG_BASE=v$(date +%Y.%m.%d)" >> $GITHUB_ENV
+
+      - name: Check if tag has already been used - add a patch number if required.
+        id: check_tag
+        run: |
+          VERSION_PATCH=$(git tag --list "${{ env.TAG }}*" --sort=-version:refname | head -n 1 | grep -oE '[0-9]+$')
+          if [ -z "$VERSION_PATCH" ]; then
+            TAG = ${{ env.TAG_BASE }}
+          else
+            VERSION_PATCH=$((VERSION_PATCH + 1))
+            TAG = "${{ env.TAG_BASE }}-${VERSION_PATCH}"
+          fi
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+          
+      - name: Push tag
+        run: |
+          git config --local user.email "akjore@outlook.com"
+          git config --local user.name "akj"
+          git tag ${{ env.TAG }}
+          git push origin ${{ env.TAG }}
         
