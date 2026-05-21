@@ -71,7 +71,7 @@ form {
 .container .chart_panel {
   grid-area: chart_panel;
   width: 900px;
-  height: 600px;
+/*  height: 700px; */
   padding-top: 12px;
   padding-left: 16px;
 }
@@ -134,14 +134,16 @@ h2 {
 }
 
 /* ========== Controls: inputs, selects, computed ========== */
+
 input,
 .input_row .computed {
   height: 20px;
   line-height: 20px;
   padding: 1px 2px;
   box-sizing: border-box;
-  text-align: center;           /* center text inside */
+  text-align: center;
 }
+
 
 /* Small numeric inputs in the 64px columns (and keep them centered) */
 .input_row > input {
@@ -354,4 +356,96 @@ button {
 
 .menu button:hover {
   background: #f0f0f0;
+}
+
+.print-mode #loadYamlDropZone,
+.print-mode #loadYamlBtn,
+.print-mode #yamlFileInput,
+.print-mode .header-actions,
+.print-mode #detailsToggle {
+  display: none !important;
+}
+
+/*
+.print-mode .container {
+  gap: 10px;
+  padding: 10px;
+}
+
+.print-mode {
+  margin: 0;
+}
+
+.print-mode .input-panel {
+  font-size: 12px;
+}
+
+.print-mode canvas {
+  max-height: 500px;
+}
+*/
+
+.print-mode input {
+  border: none;
+  background: transparent;
+}
+
+.print-mode select {
+  appearance: none;
+  border: none;
+}
+
+
+/*
+.print-mode .header h1 {
+  margin-bottom: 5px;
+}
+*/
+
+/*
+.container {
+  align-items: stretch;
+}
+*/
+/*
+#capacity_chart {
+  height: 100% !important;
+}
+*/
+
+.print-mode body {
+    background: white !important;
+}
+
+
+.print-mode .container div {
+    background: white !important;
+}
+
+.print-mode .input_panel {
+    border: 1px solid #ccc;
+}
+
+
+select {
+  height: auto;
+  min-height: 22px;
+  line-height: 1.2;
+  padding: 2px 4px;
+}
+
+.print-mode .computed {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0;
+}
+
+
+.print-mode .computed {
+    font-weight: 600;
+}
+
+
+.print-mode .input-row {
+    margin-bottom: 5px;
 }

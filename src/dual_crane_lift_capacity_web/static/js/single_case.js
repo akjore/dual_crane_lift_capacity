@@ -1,4 +1,7 @@
 "use strict";
+// Report generation in pdf
+import { jsPDF } from "https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.es.min.js/+esm";
+import html2canvas from "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js/+esm";
 
 const VALUE_FIELDS = [
     "crane_radius_a",
@@ -445,6 +448,9 @@ function initializeChart() {
 		type: "scatter",
 	    data: data,
 		options: {
+            animation: {
+                duration: 1000,
+            },
             maintainAspectRatio: false,
 			responsive: true,
 			plugins: {
@@ -661,7 +667,6 @@ form.addEventListener('change', function(evt) {
         return;
     }
 
-
     const data = liftcasesJson?.[caseIdx];
     if (!data) return;
 
@@ -700,7 +705,6 @@ function ready() {
     document.getElementById("overlay").style.visibility = "hidden";
 
     // Allow form elements to update calcs
-//    window.performCalcs = performCalcs();
     window.performCalcs = performCalcs;
     performCalcs();
 
@@ -842,9 +846,12 @@ function buildYaml(cases) {
         // envelope
         if (c.cog_envelope?.value) {
             const [min, max] = c.cog_envelope.value;
-            lines.push(
-                `    cog_envelope: [${min} ${c.cog_envelope.unit}, ${max} ${c.cog_envelope.unit}]`
-            );
+
+            if (min != null && max != null) {
+                lines.push(
+                    `    cog_envelope: [${min} ${c.cog_envelope.unit}, ${max} ${c.cog_envelope.unit}]`
+                );
+            }
         }
     });
 
@@ -867,6 +874,87 @@ function addScalar(lines, name, q) {
     lines.push(`    ${name}: ${q.value}`);
 }
 
+// Print pdf report of all lift cases provided
+async function generateReport() {
+    document.body.classList.add("print-mode");
+
+    const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: "a4"
+    });
+
+    const margin = 10;
+    const pageWidth = 297;
+    const pageHeight = 210;
+    const usableWidth = pageWidth - 2 * margin;
+    const usableHeight = pageHeight - 2 * margin;
+    const totalPages = liftcasesJson.length;
+
+    // temporarily switch of chart transitions
+    chart.options.animation.duration = 0;
+
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
+
+    for (let i = 0; i < liftcasesJson.length; i++) {
+        caseIdx = i;
+        updateGUI();
+
+        // --- Footer content ---
+        const version = "v2026.05.11-2";
+        const date = new Date().toISOString().slice(0, 10);
+        const pageNumber = i + 1;
+
+        // allow UI to render
+        await new Promise(r => setTimeout(r, 150));
+
+        const element = document.querySelector(".container");
+
+        const canvas = await html2canvas(element, {
+//            scale: 2,
+            scale: 1.5,
+            width: element.scrollWidth,
+            height: element.scrollHeight
+        });
+        const img = canvas.toDataURL("image/jpeg");
+
+        const imgProps = pdf.getImageProperties(img);
+
+        const ratio = Math.min(
+            usableWidth / imgProps.width,
+            usableHeight / imgProps.height
+        );
+
+        const imgWidth = imgProps.width * ratio;
+        const imgHeight = imgProps.height * ratio;
+
+        const x = (pageWidth - imgWidth) / 2;
+        const y = (pageHeight - imgHeight) / 2;
+
+        if (i !== 0) pdf.addPage();
+
+//        pdf.addImage(img, "PNG", x, y, imgWidth, imgHeight);
+        pdf.addImage(img, "JPEG", x, y, imgWidth, imgHeight, undefined, "FAST");
+
+        // Add left footer
+        pdf.text(version, margin, pageHeight - 5);
+
+        // Add centre footer
+        pdf.text(date, pageWidth / 2, pageHeight - 5, { align: "center" });
+
+        // Add right footer
+        pdf.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - margin, pageHeight - 5, {align: "right"});
+    }
+
+    pdf.save("dual_crane_report.pdf");
+
+    document.body.classList.remove("print-mode");
+
+    // restore chart transitions
+    chart.options.animation.duration = 0;
+}
+
 // Add the feather icons to the web page
 feather.replace();
 
@@ -887,6 +975,9 @@ document.addEventListener("click", (e) => {
 
 // Downloading the lift case input data as yaml
 document.getElementById("downloadYamlBtn").addEventListener("click", downloadYaml);
+
+// Export a pdf report of the lift cases
+document.getElementById("downloadReportBtn").addEventListener("click", generateReport);
 
 // variables
 let liftcasesJson = null;
