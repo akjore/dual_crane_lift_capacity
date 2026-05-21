@@ -9,6 +9,9 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: write   # required to push tags
+
 jobs:
   build:
 
@@ -59,30 +62,64 @@ jobs:
 
   tag:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Create tag base
-        id: tag
-        run: echo "TAG_BASE=v$(date +%Y.%m.%d)" >> $GITHUB_ENV
+      - name: Fetch all tags
+        run: git fetch --tags
 
-      - name: Check if tag has already been used - add a patch number if required.
-        id: check_tag
+      - name: Generate tag
+        id: tagger
         run: |
-          VERSION_PATCH=$(git tag --list "${{ env.TAG_BASE }}*" --sort=-version:refname | head -n 1 | grep -oE '[0-9]+$')
-          if [ -z "$VERSION_PATCH" ]; then
-            TAG = ${{ env.TAG_BASE }}
+          # Today's date
+          DATE=$(date +'%Y.%m.%d')
+          echo "DATE=$DATE"
+
+          # Find existing tags for today
+          MATCHING_TAGS=$(git tag -l "${DATE}*")
+
+          echo "Existing tags:"
+          echo "$MATCHING_TAGS"
+
+          if [ -z "$MATCHING_TAGS" ]; then
+            TAG="$DATE"
           else
-            VERSION_PATCH=1
-            TAG = "${{ env.TAG_BASE }}-${VERSION_PATCH}"
+            # Extract suffix numbers
+            MAX_N=0
+
+            for tag in $MATCHING_TAGS; do
+              if [[ "$tag" =~ ^${DATE}-([0-9]+)$ ]]; then
+                n="${BASH_REMATCH[1]}"
+                if (( n > MAX_N )); then
+                  MAX_N=$n
+                fi
+              elif [[ "$tag" == "$DATE" ]]; then
+                if (( MAX_N < 0 )); then
+                  MAX_N=0
+                fi
+              fi
+            done
+
+            NEXT_N=$((MAX_N + 1))
+            TAG="${DATE}-${NEXT_N}"
           fi
-          echo "TAG=${TAG}" >> $GITHUB_ENV
-          
+
+          echo "New tag: $TAG"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Create tag
+        run: |
+          git tag ${{ steps.tagger.outputs.tag }}
+
       - name: Push tag
         run: |
-          git config --local user.email "akjore@outlook.com"
-          git config --local user.name "akj"
-          git tag ${{ env.TAG }}
-          git push origin ${{ env.TAG }}
+          git push origin ${{ steps.tagger.outputs.tag }}
+
+ 
+          
+
         
