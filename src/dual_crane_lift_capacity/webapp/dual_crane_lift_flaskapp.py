@@ -19,6 +19,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from zoneinfo import ZoneInfo
 
 import dual_crane_lift_capacity.dual_crane_lift
+from dual_crane_lift_capacity.crane_curves import CraneCurves
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +70,7 @@ def get_test_status() -> None:
 
 def get_supported_crane_curves() -> None:
     """Get a list of the supported crane curves and store in jinja_env.globals."""
-    supported_crane_curves = dual_crane_lift_capacity.dual_crane_lift.crane_curve_ids()
+    supported_crane_curves = CraneCurves().crane_curve_ids
     app.jinja_env.globals["SUPPORTED_CRANE_CURVE_IDS"] = supported_crane_curves
     app.logger.debug(f"Supported crane curves: {app.jinja_env.globals['SUPPORTED_CRANE_CURVE_IDS']}")
 

@@ -37,7 +37,7 @@ cases:
     lift_point_b: 82.0 m
     weight: 10295 t
     cog: 61.668 m
-    cog_envelope: [61.0 m, 62.0 m]
+#    cog_envelope: [61.0 m, 62.0 m]
 
   # A reference case may be re-used, and selected parameters overwritten (yaml alias tag)
   - <<: *base_case
@@ -55,7 +55,8 @@ cases:
   # Units given for weight and CoG determine the units used on the plots
   - <<: *base_case
     case: Sample 4
-    weight: 226965.89892 slugs
+    #weight: 226965.89892 slugs
+    weight: 705431.7 slugs
 
   # Which crane is A and which is B is not important
   - <<: *base_case
