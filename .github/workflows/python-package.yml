@@ -155,7 +155,7 @@ jobs:
 
       - name: Commit version file
         run: |
-          git add static/version.js
+          git add src/dual_crane_lift_capacity/webapp/static/js/version.js
           git commit -m "Update version ${{ steps.tagger.outputs.tag }}" || echo "No changes"
 
       - name: Push commit and tag
