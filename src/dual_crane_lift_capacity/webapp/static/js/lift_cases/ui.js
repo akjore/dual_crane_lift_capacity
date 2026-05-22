@@ -2,7 +2,18 @@
 import feather from "https://cdn.jsdelivr.net/npm/feather-icons/+esm";
 
 import { INPUT_FIELDS } from "./config.js";
+import { VERSION } from "../version.js";
 import * as state from "./state.js";
+
+// --------------- Show version ---------------
+export function showVersion() {
+    const el = document.getElementById("app-version");
+    console.log(el);
+    if (el) {
+        console.log(VERSION);
+        el.textContent = `v${VERSION}`;
+    }
+}
 
 // --------------- Crane curve select box ---------------
 export function populateCraneDropdown(craneCurves) {

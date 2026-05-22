@@ -2,7 +2,7 @@
 
 // Import required methods
 import { populateCraneDropdown, setupMenu, updateInputs, updateResults, showOverlay,
-    hideOverlay, enablePrintMode, disablePrintMode, setupYamlHandlers, setupUI } from "./ui.js";
+    hideOverlay, enablePrintMode, disablePrintMode, setupYamlHandlers, setupUI, showVersion } from "./ui.js";
 import { initializePyodide, performCalcs } from "./api.js";
 import { initializeChart, updateChart } from "./chart.js";
 import { beginReport, addReportPage, finalizeReport} from "./pdf.js";
@@ -14,6 +14,8 @@ let pyodide;
 
 async function initialize() {
     showOverlay();
+
+    showVersion();
 
     // Load Pyodide - required to run python code in browser
     pyodide = await loadPyodide();
