@@ -10,12 +10,12 @@ on:
     branches: [ "main" ]
 
 permissions:
-  contents: write   # required to push tags
+  contents: write   # required to push commits and tags
 
 jobs:
-  build:
-
+  test:
     runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
@@ -23,10 +23,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -40,35 +42,66 @@ jobs:
         TOKEN: ${{ secrets.crane_curves_token }}
       run: |
         curl -H "Authorization: token ${TOKEN}" https://raw.githubusercontent.com/akjore/crane_curves/refs/heads/main/crane_curves.yaml -o crane_curves.yaml
+
     - name: Test with pytest
       env:
         CRANE_CURVE_FILENAME: "crane_curves.yaml"
       run: |
         pytest
-    - name: Build
-      run: |
-        python -m pip install --user --upgrade build
-        python -m build
-    - name: Configure Git
-      run: |
-        git config --global user.email "akjore@outlook.com"
-        git config --global user.name "akj"
-    - name: Commit and push wheel
-      if: ${{ matrix.python-version == '3.14' }}
-      run: |
-        git add -f ./dist/*.whl
-        git commit -m 'pushing new wheel'
-        git push
+
+
+  build_publish:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --user --upgrade pip
+          python -m pip install --user --upgrade build
+
+      - name: Build wheel
+        run: |
+          python -m build
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "akjore@outlook.com"
+          git config --global user.name "akj"
+
+      - name: Commit and push wheel
+        run: |
+          git add -f ./dist/*.whl
+          git commit -m "build: wheel for ${{ github.sha }}"
+          git push
+
 
   tag:
-    needs: build
+    needs: build_publish
     runs-on: ubuntu-latest
+
+    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "akjore@outlook.com"
+          git config --global user.name "akj"
+
+      - name: Sync repo
+        run: git pull origin main
 
       - name: Fetch all tags
         run: git fetch --tags
@@ -116,11 +149,16 @@ jobs:
         run: |
           git tag ${{ steps.tagger.outputs.tag }}
 
-      - name: Push tag
+      - name: Write version file
         run: |
+          echo "export const VERSION = '${{ steps.tagger.outputs.tag }}';" > static/version.js
+
+      - name: Commit version file
+        run: |
+          git add static/version.js
+          git commit -m "Update version ${{ steps.tagger.outputs.tag }}" || echo "No changes"
+
+      - name: Push commit and tag
+        run: |
+          git push origin main
           git push origin ${{ steps.tagger.outputs.tag }}
-
- 
-          
-
-        
