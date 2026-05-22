@@ -151,7 +151,7 @@ jobs:
 
       - name: Write version file
         run: |
-          echo "export const VERSION = '${{ steps.tagger.outputs.tag }}';" > static/version.js
+          echo "export const VERSION = '${{ steps.tagger.outputs.tag }}';" > src/dual_crane_lift_capacity/webapp/static/js/version.js
 
       - name: Commit version file
         run: |
