@@ -55,9 +55,9 @@ jobs:
 
 
 # --------------------------------------------------
-# 2. BUILD + PUBLISH WHEEL
+# 2. BUILD WHEEL
 # --------------------------------------------------
-  build_publish:
+  build:
     needs: test
     runs-on: ubuntu-latest
 
@@ -77,28 +77,21 @@ jobs:
       - name: Build wheel
         run: |
           python -m build
+          WHEEL=$(ls dist/*.whl | head -n 1)
+          echo "wheel=$WHEEL" >> $GITHUB_OUTPUT
 
-      - name: Configure Git
-        run: |
-          git config --global user.email "akjore@outlook.com"
-          git config --global user.name "akj"
-
-      - name: Commit and push wheel
-        run: |
-          mkdir -p wheels
-          rm -f wheels/*.whl
-          cp dist/*.whl wheels/
-
-          git add wheels/*.whl
-          git commit -m "build: wheel for ${{ github.sha }}" || echo "No changes"
-          git push origin main
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel
+          path: dist/*.whl
 
 
 # --------------------------------------------------
-# 3. TAG (versioning only)
+# 3. TAG AND VERSION FILE
 # --------------------------------------------------
   tag:
-    needs: build_publish
+    needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
 
@@ -125,40 +118,22 @@ jobs:
       - name: Generate tag
         id: tagger
         run: |
-          # Today's date
           DATE=$(date +'%Y.%m.%d')
-          echo "DATE=$DATE"
+          MATCHING=$(git tag -l "${DATE}*")
 
-          # Find existing tags for today
-          MATCHING_TAGS=$(git tag -l "${DATE}*")
-
-          echo "Existing tags:"
-          echo "$MATCHING_TAGS"
-
-          if [ -z "$MATCHING_TAGS" ]; then
+          if [ -z "$MATCHING" ]; then
             TAG="$DATE"
           else
-            # Extract suffix numbers
             MAX_N=0
-
-            for tag in $MATCHING_TAGS; do
-              if [[ "$tag" =~ ^${DATE}-([0-9]+)$ ]]; then
+            for t in $MATCHING; do
+              if [[ "$t" =~ ^${DATE}-([0-9]+)$ ]]; then
                 n="${BASH_REMATCH[1]}"
-                if (( n > MAX_N )); then
-                  MAX_N=$n
-                fi
-              elif [[ "$tag" == "$DATE" ]]; then
-                if (( MAX_N < 0 )); then
-                  MAX_N=0
-                fi
+                if (( n > MAX_N )); then MAX_N=$n; fi
               fi
             done
-
-            NEXT_N=$((MAX_N + 1))
-            TAG="${DATE}-${NEXT_N}"
+            TAG="${DATE}-$((MAX_N + 1))"
           fi
 
-          echo "New tag: $TAG"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Create tag
@@ -181,28 +156,53 @@ jobs:
 
 
 # --------------------------------------------------
-# 4. RELEASE ASSETS
+# 4. CREATE RELEASE AND ATTACH WHEEL
 # --------------------------------------------------
-  release_assets:
-    needs: tag
+  release:
+    needs: [build, tag]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download wheel artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: wheel
+          path: dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.tag.outputs.tag }}
+          name: Release ${{ needs.tag.outputs.tag }}
+          files: dist/*.whl
+
+
+# --------------------------------------------------
+# 5. DEPLOY TO GH-PAGES
+# --------------------------------------------------
+  deploy_pages:
+    needs: [build, tag]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Get crane curves
-        env:
-          TOKEN: ${{ secrets.crane_curves_token }}
-        run: |
-          curl -H "Authorization: token ${TOKEN}" \
-            https://raw.githubusercontent.com/akjore/crane_curves/refs/heads/main/crane_curves.yaml \
-            -o crane_curves.yaml
-
-      - name: Create release and upload assets
-        uses: softprops/action-gh-release@v3
+      - name: Download wheel artifact
+        uses: actions/download-artifact@v4
         with:
-          tag_name: ${{ needs.tag.outputs.tag }}
-          files: |
-            crane_curves.yaml
-            wheels/*.whl
+          name: wheel
+          path: wheels
+
+      - name: Inject wheel into webapp
+        run: |
+          mkdir -p webapp/dist
+          cp wheels/*.whl webapp/dist/
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: webapp
+          publish_branch: gh-pages
+          force_orphan: true
