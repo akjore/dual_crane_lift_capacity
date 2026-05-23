@@ -4,6 +4,8 @@
 import { jsPDF } from "https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.es.min.js/+esm";
 import html2canvas from "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js/+esm";
 import { disableChartAnimation, enableChartAnimation } from "./chart.js";
+import { VERSION } from "../version.js";
+
 
 import * as state from "./state.js";
 
@@ -45,14 +47,13 @@ export function finalizeReport() {
 
     // Finalize report
     // --- Footer content ---
-    const version = "v2026.05.11-2";
     const date = new Date().toISOString().slice(0, 10);
 
     for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
 
         // Add left footer
-        pdf.text(version, margin, pageHeight - 5);
+        pdf.text("v"+VERSION, margin, pageHeight - 5);
 
         // Add centre footer
         pdf.text(date, pageWidth / 2, pageHeight - 5, { align: "center" });

@@ -8,9 +8,7 @@ import * as state from "./state.js";
 // --------------- Show version ---------------
 export function showVersion() {
     const el = document.getElementById("app-version");
-    console.log(el);
     if (el) {
-        console.log(VERSION);
         el.textContent = `v${VERSION}`;
     }
 }
