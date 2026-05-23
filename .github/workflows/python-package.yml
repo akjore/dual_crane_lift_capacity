@@ -13,9 +13,12 @@ permissions:
   contents: write   # required to push commits and tags
 
 jobs:
+
+# --------------------------------------------------
+# 1. TEST (matrix)
+# --------------------------------------------------
   test:
     runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
@@ -41,15 +44,19 @@ jobs:
       env:
         TOKEN: ${{ secrets.crane_curves_token }}
       run: |
-        curl -H "Authorization: token ${TOKEN}" https://raw.githubusercontent.com/akjore/crane_curves/refs/heads/main/crane_curves.yaml -o crane_curves.yaml
+        curl -H "Authorization: token ${TOKEN}" \
+          https://raw.githubusercontent.com/akjore/crane_curves/refs/heads/main/crane_curves.yaml -o crane_curves.yaml
 
-    - name: Test with pytest
+    - name: Run tests
       env:
         CRANE_CURVE_FILENAME: "crane_curves.yaml"
       run: |
         pytest
 
 
+# --------------------------------------------------
+# 2. BUILD + PUBLISH WHEEL
+# --------------------------------------------------
   build_publish:
     needs: test
     runs-on: ubuntu-latest
@@ -78,16 +85,25 @@ jobs:
 
       - name: Commit and push wheel
         run: |
-          git add -f ./dist/*.whl
-          git commit -m "build: wheel for ${{ github.sha }}"
-          git push
+          mkdir -p wheels
+          rm -f wheels/*.whl
+          cp dist/*.whl wheels/
+
+          git add wheels/*.whl
+          git commit -m "build: wheel for ${{ github.sha }}" || echo "No changes"
+          git push origin main
 
 
+# --------------------------------------------------
+# 3. TAG (versioning only)
+# --------------------------------------------------
   tag:
     needs: build_publish
     runs-on: ubuntu-latest
-
     if: github.ref == 'refs/heads/main'
+
+    outputs:
+      tag: ${{ steps.tagger.outputs.tag }}
 
     steps:
       - name: Checkout repo
@@ -151,14 +167,42 @@ jobs:
 
       - name: Write version file
         run: |
-          echo "export const VERSION = '${{ steps.tagger.outputs.tag }}';" > src/dual_crane_lift_capacity/webapp/static/js/version.js
+          echo "export const VERSION = '${{ steps.tagger.outputs.tag }}';" > webapp/js/version.js
 
       - name: Commit version file
         run: |
-          git add src/dual_crane_lift_capacity/webapp/static/js/version.js
+          git add webapp/js/version.js
           git commit -m "Update version ${{ steps.tagger.outputs.tag }}" || echo "No changes"
 
       - name: Push commit and tag
         run: |
           git push origin main
           git push origin ${{ steps.tagger.outputs.tag }}
+
+
+# --------------------------------------------------
+# 4. RELEASE ASSETS
+# --------------------------------------------------
+  release_assets:
+    needs: tag
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Get crane curves
+        env:
+          TOKEN: ${{ secrets.crane_curves_token }}
+        run: |
+          curl -H "Authorization: token ${TOKEN}" \
+            https://raw.githubusercontent.com/akjore/crane_curves/refs/heads/main/crane_curves.yaml \
+            -o crane_curves.yaml
+
+      - name: Create release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.tag.outputs.tag }}
+          files: |
+            crane_curves.yaml
+            wheels/*.whl
