@@ -85,7 +85,7 @@ jobs:
       - name: Generate tag
         id: tagger
         run: |
-          DATE=$(date +'%Y.%m.%d')
+          DATE=$(date +'%Y.%-m.%-d')
           MATCHING=$(git tag -l "${DATE}*")
 
           if [ -z "$MATCHING" ]; then
@@ -93,12 +93,12 @@ jobs:
           else
             MAX_N=0
             for t in $MATCHING; do
-              if [[ "$t" =~ ^${DATE}-([0-9]+)$ ]]; then
+          if [[ "$t" =~ ^${DATE}\.post([0-9]+)$ ]]
                 n="${BASH_REMATCH[1]}"
                 if (( n > MAX_N )); then MAX_N=$n; fi
               fi
             done
-            TAG="${DATE}-$((MAX_N + 1))"
+            TAG="${DATE}.post$((MAX_N + 1))"
           fi
 
           echo "tag=$TAG" >> $GITHUB_OUTPUT
