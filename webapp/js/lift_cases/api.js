@@ -1,6 +1,6 @@
 "use strict";
 
-import { VERSION } from "./version.js";
+import { VERSION } from "../version.js";
 import * as state from "./state.js";
 
 export async function initializePyodide(pyodide) {
