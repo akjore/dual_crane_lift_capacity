@@ -12,10 +12,13 @@ export async function initializePyodide(pyodide) {
     await micropip.install("requests");
     await micropip.install("simplejson");
 
-    // Get the URL for package wheel
+    // Get the URL for package wheel, and install it
     const wheelUrl = getWheelUrl();
-
     await micropip.install(wheelUrl);
+
+    // Get the URL for the crane curves, and make it available to pyodide
+    const craneCurvesYml = await loadCraneCurves();
+    pyodide.globals.set("crane_curves_yml", craneCurvesYml);
 
     // Configure logging to developer's console, and get crane curves
     await pyodide.runPythonAsync(`
@@ -45,11 +48,12 @@ export async function initializePyodide(pyodide) {
         logger.addHandler(console)
 
         # Get crane curves
-        response = requests.get("http://localhost:5000/static/crane_curves.yaml")
-        logger.debug("Raw crane curve content found: %s", response.content)
+        #        response = requests.get("http://localhost:5000/static/crane_curves.yaml")
+        # logger.debug("Raw crane curve content found: %s", response.content)
 
-        Path("/crane_curves.yaml").write_bytes(response.content)
-        os.environ["CRANE_CURVE_FILENAME"] = "/crane_curves.yaml"
+        # Path("/crane_curves.yaml").write_bytes(response.content)
+        Path("/crane_curves.yaml").write_bytes(crane_curves_yml)
+        os.environ["CRANE_CURVE_FILENAME"] = "crane_curves.yaml"
 
         crane_curves = list(CraneCurves.crane_curve_ids())
         # logger.info("Crane curves found: %s", list(crane_curves))
@@ -130,4 +134,18 @@ function getCraneCurvesUrl() {
     const REPO = "akjore/dual_crane_lift_capacity";
 
     return `https://github.com/${REPO}/releases/download/${VERSION}/crane_curves.yaml`;
+}
+
+export async function loadCraneCurves() {
+    const url = getCraneCurvesUrl();
+
+    console.log("Loading crane curves from:", url);
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+        throw new Error(`Failed to load crane curves: ${response.status}`);
+    }
+
+    return await response.text();
 }
