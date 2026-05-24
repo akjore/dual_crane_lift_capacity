@@ -123,5 +123,5 @@ export async function performCalcs(pyodide, evnt) {
 };
 
 function getWheelUrl() {
-    return "wheels/dual_crane_lift_capacity-${VERSION}-py3-none-any.whl";
+    return `wheels/dual_crane_lift_capacity-${VERSION}-py3-none-any.whl`;
 }
