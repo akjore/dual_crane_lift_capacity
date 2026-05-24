@@ -17,7 +17,8 @@ export async function initializePyodide(pyodide) {
     await micropip.install(wheelUrl);
 
     // Get the URL for the crane curves, and make it available to pyodide
-    const craneCurvesYml = await loadCraneCurves();
+    const craneCurvesYml = await getCraneCurves();
+    console.log(craneCurvesYml);
     pyodide.globals.set("crane_curves_yml", craneCurvesYml);
 
     // Configure logging to developer's console, and get crane curves
@@ -130,21 +131,11 @@ function getWheelUrl() {
     return `wheels/dual_crane_lift_capacity-${VERSION}-py3-none-any.whl`;
 }
 
-function getCraneCurvesUrl() {
-    const REPO = "akjore/dual_crane_lift_capacity";
-
-    return `https://github.com/${REPO}/releases/download/${VERSION}/crane_curves.yaml`;
-}
-
-export async function loadCraneCurves() {
-    const url = getCraneCurvesUrl();
-
-    console.log("Loading crane curves from:", url);
-
-    const response = await fetch(url);
+async function getCraneCurves() {
+    const response = await fetch("data/crane_curves.yaml");
 
     if (!response.ok) {
-        throw new Error(`Failed to load crane curves: ${response.status}`);
+        throw new Error("Failed to load crane curves");
     }
 
     return await response.text();

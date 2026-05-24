@@ -194,6 +194,7 @@ jobs:
         run: |
           git pull origin main
 
+
       - name: Download wheel artifact
         uses: actions/download-artifact@v8
         with:
@@ -205,6 +206,15 @@ jobs:
           rm -rf webapp/wheels
           mkdir -p webapp/wheels
           cp wheels/*.whl webapp/wheels/
+
+      - name: Get crane curves
+        env:
+          TOKEN: ${{ secrets.crane_curves_token }}
+        run: |
+          mkdir -p webapp/data
+          curl -H "Authorization: token ${TOKEN}" \
+            https://raw.githubusercontent.com/akjore/crane_curves/main/crane_curves.yaml \
+            -o webapp/data/crane_curves.yaml
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
