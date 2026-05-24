@@ -198,8 +198,9 @@ jobs:
 
       - name: Inject wheel into webapp
         run: |
-          mkdir -p webapp/dist
-          cp wheels/*.whl webapp/dist/
+          rm -rf webapp/wheels
+          mkdir -p webapp/wheels
+          cp wheels/*.whl webapp/wheels/
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
