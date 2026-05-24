@@ -125,3 +125,9 @@ export async function performCalcs(pyodide, evnt) {
 function getWheelUrl() {
     return `wheels/dual_crane_lift_capacity-${VERSION}-py3-none-any.whl`;
 }
+
+function getCraneCurvesUrl() {
+    const REPO = "akjore/dual_crane_lift_capacity";
+
+    return `https://github.com/${REPO}/releases/download/${VERSION}/crane_curves.yaml`;
+}
