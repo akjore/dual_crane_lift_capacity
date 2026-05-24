@@ -15,16 +15,6 @@ export async function initializePyodide(pyodide) {
     // Get the URL for package wheel
     const wheelUrl = getWheelUrl();
 
-    // Load dual crane lift capacity lib
-    //wheel_url = "https://github.com/akjore/dual_crane_lift_capacity.whl";
-    //wheel_url = "https://github.com/akjore/dual_crane_lift_capacity/dist/dual_crane_lift_capacity-0.0.1-py3-none-any.whl";
-    // wheel_url = "file:///dual_crane_lift_capacity-0.0.1-py3-none-any.whl";
-    // const wheel_url = "file:///dual_crane_lift_capacity-0.1.1.post45+git.f3b0c79e.dirty-py3-none-any.whl";
-    // const wheel_url = "http://localhost:8000/dual_crane_lift_capacity-0.1.1.post45+git.f3b0c79e.dirty-py3-none-any.whl";
-    // const wheel_url = "http://localhost:5000/dual_crane_lift_capacity-0.1.1.post45+git.f3b0c79e.dirty-py3-none-any.whl";
-    // const wheel_url = "{{ url_for('static', filename='dual_crane_lift_capacity-0.1.1.post45+git.f3b0c79e.dirty-py3-none-any.whl') }}"
-    //const wheel_url = "http://localhost:5000/static/dual_crane_lift_capacity-0.0.1-py3-none-any.whl";
-
     await micropip.install(wheelUrl);
 
     // Configure logging to developer's console, and get crane curves
