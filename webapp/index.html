@@ -10,7 +10,7 @@
     <meta http-equiv="Expires" content="0">
 	-->
 	<!-- Load stylesheet -->
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+	<link rel="stylesheet" href="css/app.css">
 
     <!-- Load Pyodide here until an esm version is available -->
     <script src="https://cdn.jsdelivr.net/pyodide/v0.29.0/full/pyodide.js"></script>
@@ -21,7 +21,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0"></script>
 
     <!-- Load .js file to handle gui and interaction with pyodide -->
-	<script type="module" src="{{ url_for('static', filename='js/lift_cases/main.js') }}"></script>
+	<script type="module" src="js/lift_cases/main.js"></script>
 </head>
 
 <body>

@@ -1,5 +1,6 @@
 "use strict";
 
+import { VERSION } from "./version.js";
 import * as state from "./state.js";
 
 export async function initializePyodide(pyodide) {
@@ -11,6 +12,9 @@ export async function initializePyodide(pyodide) {
     await micropip.install("requests");
     await micropip.install("simplejson");
 
+    // Get the URL for package wheel
+    const wheelUrl = getWheelUrl();
+
     // Load dual crane lift capacity lib
     //wheel_url = "https://github.com/akjore/dual_crane_lift_capacity.whl";
     //wheel_url = "https://github.com/akjore/dual_crane_lift_capacity/dist/dual_crane_lift_capacity-0.0.1-py3-none-any.whl";
@@ -19,9 +23,9 @@ export async function initializePyodide(pyodide) {
     // const wheel_url = "http://localhost:8000/dual_crane_lift_capacity-0.1.1.post45+git.f3b0c79e.dirty-py3-none-any.whl";
     // const wheel_url = "http://localhost:5000/dual_crane_lift_capacity-0.1.1.post45+git.f3b0c79e.dirty-py3-none-any.whl";
     // const wheel_url = "{{ url_for('static', filename='dual_crane_lift_capacity-0.1.1.post45+git.f3b0c79e.dirty-py3-none-any.whl') }}"
-    const wheel_url = "http://localhost:5000/static/dual_crane_lift_capacity-0.0.1-py3-none-any.whl";
+    //const wheel_url = "http://localhost:5000/static/dual_crane_lift_capacity-0.0.1-py3-none-any.whl";
 
-    await micropip.install(wheel_url);
+    await micropip.install(wheelUrl);
 
     // Configure logging to developer's console, and get crane curves
     await pyodide.runPythonAsync(`
@@ -127,3 +131,8 @@ export async function performCalcs(pyodide, evnt) {
     // Populate the js variables with updated results
     extractResults(pyodide);
 };
+
+
+function getWheelUrl() {
+    return `/wheels/dual_crane_lift_capacity-${VERSION}-py3-none-any.whl`;
+}
