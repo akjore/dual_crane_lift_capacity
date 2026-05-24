@@ -54,7 +54,7 @@ export async function initializePyodide(pyodide) {
 
         # Path("/crane_curves.yaml").write_bytes(response.content)
         Path("/crane_curves.yaml").write_text(crane_curves_yml)
-        os.environ["CRANE_CURVE_FILENAME"] = "crane_curves.yaml"
+        os.environ["CRANE_CURVE_FILENAME"] = "/crane_curves.yaml"
 
         crane_curves = list(CraneCurves.crane_curve_ids())
         # logger.info("Crane curves found: %s", list(crane_curves))
