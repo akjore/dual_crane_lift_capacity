@@ -1,1 +1,1 @@
-export const VERSION = '2026.05.24-1';
+export const VERSION = '2026.05.24-2';
