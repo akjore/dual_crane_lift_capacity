@@ -63,9 +63,6 @@ class LiftCase:
         self.float_a = float_a
         self.float_b = float_b
 
-#        self.crane_capacity_a = CraneCurves.crane_capacity(self.crane_curve_a, self.crane_radius_a)
-#        self.crane_capacity_b = CraneCurves.crane_capacity(self.crane_curve_b, self.crane_radius_b)
-
         # Print the variables for debug purposes
         inputs = locals()
         del inputs["self"]
@@ -430,8 +427,9 @@ class LiftCases:
                 self.liftcases.append(LiftCase.from_dict(case))
 
             return self
-        except ValueError:
-            raise ValueError("No input or malformed input provided.")
+        except ValueError as exc:
+            msg = "No input or malformed input provided."
+            raise ValueError(msg) from exc
 
 
     def from_json(self, text: str) -> LiftCases:

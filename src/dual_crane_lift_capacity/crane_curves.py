@@ -1,7 +1,6 @@
 """Handles importing and interpolation of crane curves."""
 import logging
 import os
-from importlib import resources as impresources
 from pathlib import Path
 from typing import ClassVar
 
@@ -9,7 +8,7 @@ import numpy as np
 import pint
 import yaml
 
-from . import Q, resources, ureg
+from . import Q, ureg
 
 logger = logging.getLogger(__name__)
 
@@ -74,14 +73,9 @@ class CraneCurves:
     def _load_crane_curves(cls) -> str:
         """Return the crane curve data. Load it from file, if required."""
         # loads and returns the lift curves defined in the user-specified .yaml file
-        # if file not found, use the template in the repository
         crane_curve_filename = "CRANE_CURVE_FILENAME"
         crane_curve_file = os.getenv(crane_curve_filename)
         file = Path(crane_curve_file) if crane_curve_file else None
-
-        if not file:
-            logger.warning(f"Environment variable {crane_curve_filename} not specified. Using template file.")
-            file = impresources.files(resources) / "crane_curves.yaml.template"
 
         file_content = None
         if file and file.exists:
@@ -110,9 +104,8 @@ class CraneCurves:
         :returns: crane capacity at a given radius
         """
         if curve not in cls.crane_curve_ids():
-            logger.error(
-                f"Known crane curves are: {list(cls.crane_curve_ids())}. Requested crane curve is: {curve}",
-            )
-            raise KeyError(f"Known crane curves are: {list(cls.crane_curve_ids())}. Requested crane curve is: {curve}")
+            msg = f"Known crane curves are: {list(cls.crane_curve_ids())}. Requested crane curve is: {curve}"
+            logger.error(msg)
+            raise KeyError(msg)
 
         return np.interp(radius, cls.crane_radii()[curve], cls.crane_capacities()[curve], left=np.nan, right=np.nan)

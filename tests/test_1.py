@@ -1,12 +1,8 @@
 """Function testing of the package."""
 # ruff: noqa: S101
-import matplotlib.pyplot as plt
-import pytest
-import yaml
-
 import pint
+import pytest
 
-from dual_crane_lift_capacity.dual_crane_lift import DualCraneLift
 from dual_crane_lift_capacity.dual_crane_lift_capacity import DualCraneLiftCapacity
 from dual_crane_lift_capacity.lift_cases import LiftCases
 
@@ -47,8 +43,8 @@ def test_valid_input(input_sample: str) -> None:
     """
     lift_cases = LiftCases().from_yaml(input_sample)
 
-    ret = DualCraneLift(lift_cases)
-    assert isinstance(ret, DualCraneLift)
+    ret = DualCraneLiftCapacity(lift_cases)
+    assert isinstance(ret, DualCraneLiftCapacity)
 
 
 def test_crane_curve(input_sample: str) -> None:
@@ -74,7 +70,7 @@ def test_missing_parameter(input_sample: str, key: str) -> None:
     # Delete key from the input_sample and try to load
     lines = input_sample.splitlines()
     key_ = key + ":"
-    input_list = [line for line in lines if not key_ in line]
+    input_list = [line for line in lines if key_ not in line]
     revised_input = "\n".join(input_list)
 
     with pytest.raises(KeyError):
