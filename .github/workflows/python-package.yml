@@ -12,6 +12,9 @@ on:
 permissions:
   contents: write   # required to push commits and tags
 
+env:
+  WHEEL_COMMIT_MSG: "Update wheel from CI build"
+
 jobs:
 
 # --------------------------------------------------
@@ -55,7 +58,7 @@ jobs:
 
 
 # --------------------------------------------------
-# 3. TAG AND VERSION FILE
+# 2. TAG AND VERSION FILE
 # --------------------------------------------------
   tag:
     needs: test
@@ -123,7 +126,7 @@ jobs:
 
 
 # --------------------------------------------------
-# 2. BUILD WHEEL
+# 3. BUILD WHEEL
 # --------------------------------------------------
   build:
     needs: tag
@@ -223,3 +226,48 @@ jobs:
           publish_dir: webapp
           publish_branch: gh-pages
           force_orphan: true
+
+
+# --------------------------------------------------
+# 6. UPDATE MAIN WITH WHEEL
+# --------------------------------------------------
+  update_main:
+    needs: build
+    runs-on: ubuntu-latest
+
+    if: >
+      github.ref == 'refs/heads/main' &&
+      !contains(github.event.head_commit.message, env.WHEEL_COMMIT_MSG)
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Sync with latest main
+        run: |
+          git pull origin main
+
+      - name: Download wheel artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: wheel
+          path: dist
+
+      - name: Copy wheel into webapp
+        run: |
+          mkdir -p webapp/wheels
+          rm -f webapp/wheels/*.whl
+          cp dist/*.whl webapp/wheels/
+
+      - name: Commit and push wheel
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add webapp/wheels/*.whl
+
+          git diff --cached --quiet || git commit -m "$WHEEL_COMMIT_MSG"
+
+          git push origin main
