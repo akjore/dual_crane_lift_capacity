@@ -11,7 +11,6 @@ export async function initializePyodide(pyodide) {
     // Load micropip - required to load non-standard packages
     await pyodide.loadPackage("micropip");
     const micropip = pyodide.pyimport("micropip");
-    await micropip.install("simplejson");
 
     // Get the URL for package wheel, and install it
     const wheelUrl = getWheelUrl();
@@ -25,6 +24,7 @@ export async function initializePyodide(pyodide) {
     // Configure logging to developer's console, and get crane curves
     await pyodide.runPythonAsync(`
         import logging
+        import json
         import os
         import sys
         from pathlib import Path
@@ -72,13 +72,13 @@ export async function runPython(pyodide) {
             liftcases = LiftCases().from_yaml(cases_yaml_str)
         else:
             logger.debug("Loading json")
-            logger.debug(cases_json_str)
             liftcases = LiftCases().from_json(cases_json_str)
         liftcases_json = liftcases.to_json()
 
         # Calculate results
         dualcranelift = DualCraneLiftCapacity(liftcases)
-        logger.debug("Produced python output: %s", dualcranelift)
+        s = json.dumps(dualcranelift, default=str)
+        logger.debug("Produced python output: %s", s)
 
         # Return input and results
         results_json = dualcranelift.to_json()
