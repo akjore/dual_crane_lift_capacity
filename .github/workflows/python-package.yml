@@ -263,6 +263,6 @@ jobs:
 
           git add webapp/wheels/*.whl
 
-          git diff --cached --quiet || git commit -m "$WHEEL_COMMIT_MSG"
+          git diff --cached --quiet || git commit -m "Update wheel from CI build"
 
           git push origin main
