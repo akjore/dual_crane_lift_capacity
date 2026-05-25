@@ -1,5 +1,7 @@
 "use strict";
 
+import { log } from "../logger.js";
+
 // variables
 export let liftcasesJson = [];
 export let resultsJson = [];
@@ -34,7 +36,7 @@ export function setCaseIdx(i) {
 
 export function setCasesYamlStr(value) {
     if (value !== null && typeof value !== "string") {
-        console.warn("setCasesYamlStr expected string/null, got:", value);
+        log.warn("setCasesYamlStr expected string/null, got:", value);
     }
 
     casesYamlStr = value;
@@ -42,7 +44,7 @@ export function setCasesYamlStr(value) {
 
 export function setCasesJsonStr(value) {
     if (value !== null && typeof value !== "string") {
-        console.warn("setCasesJsonStr expected string/null, got:", value);
+        log.warn("setCasesJsonStr expected string/null, got:", value);
     }
 
     casesJsonStr = value;
@@ -50,7 +52,7 @@ export function setCasesJsonStr(value) {
 
 export function setResultsJson(newArray) {
     if (!Array.isArray(newArray)) {
-        console.error("setResultsJson: expected array, got:", newArray);
+        log.error("setResultsJson: expected array, got:", newArray);
         return;
     }
 
@@ -60,11 +62,11 @@ export function setResultsJson(newArray) {
 
 export function setLiftcasesJson(newArray) {
     if (!Array.isArray(newArray)) {
-        console.error("setLiftcasesJson: expected array, got:", newArray);
+        log.error("setLiftcasesJson: expected array, got:", newArray);
         return;
     }
 
-    // clear existing array (do NOT reassign)
+    // clear existing array
     liftcasesJson.length = 0;
 
     // replace contents

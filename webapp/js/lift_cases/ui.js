@@ -3,7 +3,9 @@ import feather from "https://cdn.jsdelivr.net/npm/feather-icons/+esm";
 
 import { INPUT_FIELDS } from "./config.js";
 import { VERSION } from "../version.js";
+import { log } from "../logger.js";
 import * as state from "./state.js";
+
 
 // --------------- Show version ---------------
 export function showVersion() {
@@ -77,6 +79,9 @@ function setupYamlMenu() {
 
     // Downloading the lift case input data as yaml
     document.getElementById("downloadYamlBtn").addEventListener("click", downloadYaml);
+
+    // Downloading a sample for the user to modify
+    document.getElementById("downloadSampleBtn").addEventListener("click", downloadSample);
 }
 
 // Report-part of menu
@@ -85,27 +90,6 @@ function setupDownloadReport(generateReport) {
         .getElementById("downloadReportBtn")
         .addEventListener("click", generateReport);
 }
-
-// --------------- Details-section in left panel ---------------
-// 'Details' section is nominally hidden - toggle to display / hide
-//const toggle = document.getElementById('detailsToggle');
-//const section = document.getElementById('detailsSection');
-
-//function toggleDetails() {
-//    const isHidden = section.hidden;
-//    section.hidden = !isHidden;
-//    toggle.classList.toggle('expanded', isHidden);
-//}
-
-//toggle.addEventListener('click', toggleDetails);
-
-//      keyboard accessibility
-//toggle.addEventListener('keydown', (e) => {
-//    if (e.key === 'Enter' || e.key === ' ') {
-//        e.preventDefault();
-//        toggleDetails();
-//    }
-//});
 
 // --------------- Upload yaml-file ---------------
 export function setupYamlHandlers(onYamlLoaded) {
@@ -152,45 +136,6 @@ export function setupYamlHandlers(onYamlLoaded) {
     });
 }
 
-
-//const loadBtn   = document.getElementById('loadYamlBtn');
-//const dropZone  = document.getElementById('loadYamlDropZone');
-//const fileInput = document.getElementById('yamlFileInput');
-
-// Click: open file picker
-//loadBtn.addEventListener('click', () => {
- //   fileInput.click();
-//});
-
-// File chosen via picker
-//fileInput.addEventListener('change', async () => {
-//    const file = fileInput.files[0];
-//    if (!file) return;
-////    await handleYamlFile(file);
-//    fileInput.value = ''; // allow re-upload of same file
-//});
-
-// Drag & drop
-//dropZone.addEventListener('dragover', e => {
- //   e.preventDefault();           // required
-//    dropZone.classList.add('drag-over');
-//});
-
-//dropZone.addEventListener('dragleave', () => {
-//    dropZone.classList.remove('drag-over');
-//});
-
-//dropZone.addEventListener('drop', async e => {
-//    e.preventDefault();
-//    dropZone.classList.remove('drag-over');
-
-//    const file = e.dataTransfer.files[0];
-//    if (!file) return;
-
-//    await handleYamlFile(file);
-//    await handleYamlFile(file, onYamlLoaded);
-//});//
-
 // Handle loading of yaml-file
 export async function handleYamlFile(file) {
     if (!file.name.match(/\.ya?ml$/i)) {
@@ -198,11 +143,8 @@ export async function handleYamlFile(file) {
         return;
     }
 
-//    casesYamlStr = await file.text();
     state.setCasesYamlStr(await file.text());
     state.setCasesJsonStr(null);
-//    await performCalcs();
-//    onYamlLoaded();
 }
 
 // --------------- Update inputs and result fields ---------------
@@ -310,6 +252,21 @@ export function updateResults() {
     const isPositive = data.weight_margin.value >= 0;
     elmn.classList.toggle('weight_margin--positive', isPositive);
     elmn.classList.toggle('weight_margin--negative', !isPositive);
+}
+
+// --------------- Provide user with a sample ---------------
+export function downloadSample() {
+    const url = "data/sample.yaml";
+
+    log.info("Downloading sample YAML");
+
+    // Trigger browser download
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "sample.yaml";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 }
 
 // --------------- Download copy of lift cases as yaml ---------------

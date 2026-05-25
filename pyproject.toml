@@ -7,7 +7,10 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools-git-versioning]
 enabled = true
-dev_template = "{tag}.post{ccount}"
+template = "{tag}"
+dev_template = "{tag}"
+dirty_template = "{tag}"
+count_commits_from_version_file = false
 
 [tool.ruff]
 lint.select = ["ALL"]

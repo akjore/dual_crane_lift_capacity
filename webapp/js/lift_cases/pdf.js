@@ -5,8 +5,7 @@ import { jsPDF } from "https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.es.mi
 import html2canvas from "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js/+esm";
 import { disableChartAnimation, enableChartAnimation } from "./chart.js";
 import { VERSION } from "../version.js";
-
-
+import { log } from "../logger.js";
 import * as state from "./state.js";
 
 let pdf;

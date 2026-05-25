@@ -6,6 +6,7 @@
 
 const ChartJS = window.Chart;
 import { DATASET_MAP } from "./config.js";
+import { log } from "../logger.js";
 import * as state from "./state.js";
 
 //ChartJS.register(
@@ -22,7 +23,7 @@ export function initializeChart() {
     const ctx = document.getElementById("capacity_chart");
 
     // Set chart font
-    Chart.defaults.font.family = "Trebuchet MS";
+    ChartJS.defaults.font.family = "Trebuchet MS";
 
     let gridColour = "#e5e7ef";
     let annotationColour = "#999";
@@ -321,7 +322,7 @@ function updateAnnotationComponent(annotation, xmin, xmax, ymin, ymax, visible=t
     const annotations = chart.options.plugins.annotation.annotations;
 
     if (!annotations[annotation]) {
-        console.warn("Missing annotation:", annotation);
+        log.warn("Missing annotation:", annotation);
         return;
     }
 

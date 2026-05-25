@@ -1,6 +1,8 @@
 "use strict";
 
+import yaml from "https://cdn.jsdelivr.net/npm/js-yaml@4/+esm";
 import { VERSION } from "../version.js";
+import { log } from "../logger.js";
 import * as state from "./state.js";
 
 export async function initializePyodide(pyodide) {
@@ -9,16 +11,15 @@ export async function initializePyodide(pyodide) {
     // Load micropip - required to load non-standard packages
     await pyodide.loadPackage("micropip");
     const micropip = pyodide.pyimport("micropip");
-    await micropip.install("requests");
     await micropip.install("simplejson");
 
     // Get the URL for package wheel, and install it
     const wheelUrl = getWheelUrl();
     await micropip.install(wheelUrl);
 
-    // Get the URL for the crane curves, and make it available to pyodide
+    // Get the crane curves, and make it available to pyodide
     const craneCurvesYml = await getCraneCurves();
-    console.log(craneCurvesYml);
+    log.debug("Crane curves:", yaml.load(craneCurvesYml));
     pyodide.globals.set("crane_curves_yml", craneCurvesYml);
 
     // Configure logging to developer's console, and get crane curves
@@ -26,8 +27,6 @@ export async function initializePyodide(pyodide) {
         import logging
         import os
         import sys
-
-        import requests
         from pathlib import Path
 
         from dual_crane_lift_capacity.crane_curves import CraneCurves
@@ -49,15 +48,10 @@ export async function initializePyodide(pyodide) {
         logger.addHandler(console)
 
         # Get crane curves
-        #        response = requests.get("http://localhost:5000/static/crane_curves.yaml")
-        # logger.debug("Raw crane curve content found: %s", response.content)
-
-        # Path("/crane_curves.yaml").write_bytes(response.content)
         Path("/crane_curves.yaml").write_text(crane_curves_yml)
         os.environ["CRANE_CURVE_FILENAME"] = "/crane_curves.yaml"
 
         crane_curves = list(CraneCurves.crane_curve_ids())
-        # logger.info("Crane curves found: %s", list(crane_curves))
     `);
     return pyodide.globals.get("crane_curves");
 };
@@ -100,11 +94,9 @@ function extractResults(pyodide) {
     ret = JSON.parse(pyodide.globals.get("results_json"));
     state.setResultsJson(ret);
 
-    console.log("Liftcases returned from python:");
-    console.log(state.liftcasesJson);
+    log.debug("Liftcases returned from python:", state.liftcasesJson);
 
-    console.log("Results returned from python:");
-    console.log(state.resultsJson);
+    log.debug("Results returned from python:", state.resultsJson);
 };
 
 export async function performCalcs(pyodide, evnt) {
@@ -139,4 +131,27 @@ async function getCraneCurves() {
     }
 
     return await response.text();
+}
+
+export async function setPythonLogLevel(pyodide, level) {
+    try {
+        pyodide.globals.set("log_level", level);
+
+        await pyodide.runPythonAsync(`
+            logger.info("Current log level is %s", logging.getLevelName(logger.getEffectiveLevel()))
+
+            level_map = {
+                "DEBUG": logging.DEBUG,
+                "INFO": logging.INFO,
+                "WARNING": logging.WARNING,
+                "ERROR": logging.ERROR,
+            }
+
+            logger.setLevel(level_map.get(log_level, logging.WARNING))
+
+            logger.info("Log level changed to %s", logging.getLevelName(logger.getEffectiveLevel()))
+        `);
+    } catch (err) {
+        console.warn("[APP] Failed to set Python log level");
+    }
 }

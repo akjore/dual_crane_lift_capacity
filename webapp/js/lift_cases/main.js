@@ -3,11 +3,11 @@
 // Import required methods
 import { populateCraneDropdown, setupMenu, updateInputs, updateResults, showOverlay,
     hideOverlay, enablePrintMode, disablePrintMode, setupYamlHandlers, setupUI, showVersion } from "./ui.js";
-import { initializePyodide, performCalcs } from "./api.js";
+import { initializePyodide, performCalcs, setPythonLogLevel } from "./api.js";
 import { initializeChart, updateChart } from "./chart.js";
-import { beginReport, addReportPage, finalizeReport} from "./pdf.js";
+import { beginReport, addReportPage, finalizeReport } from "./pdf.js";
 import { VALUE_FIELDS } from "./config.js";
-
+import { log, setLogLevelJS } from "../logger.js";
 import * as state from "./state.js";
 
 let pyodide;
@@ -35,7 +35,7 @@ async function initialize() {
 
     await handleCalculation();
 
-    console.log("Ready.");
+    log.info("Ready.");
 }
 
 function registerEventListeners() {
@@ -142,5 +142,27 @@ async function generatePdfWithCases() {
     finalizeReport();
     disablePrintMode();
 }
+
+window.setLogLevel = async function (level) {
+    const VALID = ["DEBUG", "INFO", "WARNING", "ERROR"];
+
+    if (!level) {
+        log.info("[APP] Usage: setLogLevel(level)");
+        log.info("[APP] Valid levels:", VALID);
+        return;
+    }
+
+    const normalized = String(level).toUpperCase();
+
+    if (VALID.indexOf(normalized) === -1) {
+        log.warn("[APP] Invalid level:", level);
+        log.info("[APP] Valid levels:", VALID);
+        return;
+    }
+
+    setLogLevelJS(normalized);
+
+    await setPythonLogLevel(pyodide, normalized);
+};
 
 initialize();
