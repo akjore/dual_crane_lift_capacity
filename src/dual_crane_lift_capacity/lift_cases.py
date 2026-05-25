@@ -425,11 +425,11 @@ class LiftCases:
         try:
             for case in self._raw["cases"]:
                 self.liftcases.append(LiftCase.from_dict(case))
-
-            return self
         except ValueError as exc:
             msg = "No input or malformed input provided."
             raise ValueError(msg) from exc
+        else:
+            return self
 
 
     def from_json(self, text: str) -> LiftCases:
