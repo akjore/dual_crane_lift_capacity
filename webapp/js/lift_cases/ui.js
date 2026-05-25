@@ -346,13 +346,13 @@ function addScalar(lines, name, q) {
 }
 
 // --------------- Misc helper functions ---------------
-export function showOverlay() {
-    document.getElementById("overlay").style.visibility = "visible";
-}
+//export function showOverlay() {
+//    document.getElementById("overlay").style.visibility = "visible";
+//}
 
-export function hideOverlay() {
-    document.getElementById("overlay").style.visibility = "hidden";
-}
+//export function hideOverlay() {
+//    document.getElementById("overlay").style.visibility = "hidden";
+//}
 
 export function enablePrintMode() {
     document.body.classList.add("print-mode");
@@ -360,4 +360,29 @@ export function enablePrintMode() {
 
 export function disablePrintMode() {
     document.body.classList.remove("print-mode");
+}
+
+// --------------- Loading overlay ---------------
+export function setLoadingText(text) {
+    const el = document.getElementById("loadingText");
+    if (el) el.textContent = text;
+}
+
+export function showLoadingOverlay() {
+    const el = document.getElementById("loadingOverlay");
+    if (!el) return;
+
+    requestAnimationFrame(() => {
+        el.classList.add("active");
+    });
+}
+
+export function hideLoadingOverlay() {
+    const el = document.getElementById("loadingOverlay");
+    if (!el) return;
+
+    el.classList.remove("active");
+
+    setTimeout(() => {
+    }, 300);
 }

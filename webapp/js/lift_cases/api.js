@@ -5,23 +5,27 @@ import { VERSION } from "../version.js";
 import { log } from "../logger.js";
 import * as state from "./state.js";
 
-export async function initializePyodide(pyodide) {
+export async function initializePyodide(pyodide, onProgress) {
     // Set up pyodide, install and load packages, configure logging etc. for future use.
 
     // Load micropip - required to load non-standard packages
+    if (onProgress) onProgress("Initializing Python runtime ...");
     await pyodide.loadPackage("micropip");
     const micropip = pyodide.pyimport("micropip");
 
     // Get the URL for package wheel, and install it
+    if (onProgress) onProgress("Installing application package ...");
     const wheelUrl = getWheelUrl();
     await micropip.install(wheelUrl);
 
     // Get the crane curves, and make it available to pyodide
+    if (onProgress) onProgress("Loading crane curves ...");
     const craneCurvesYml = await getCraneCurves();
     log.debug("Crane curves:", yaml.load(craneCurvesYml));
     pyodide.globals.set("crane_curves_yml", craneCurvesYml);
 
     // Configure logging to developer's console, and get crane curves
+    if (onProgress) onProgress("Preparing runtime environment ...");
     await pyodide.runPythonAsync(`
         import logging
         import json
@@ -152,6 +156,6 @@ export async function setPythonLogLevel(pyodide, level) {
             logger.info("Log level changed to %s", logging.getLevelName(logger.getEffectiveLevel()))
         `);
     } catch (err) {
-        console.warn("[APP] Failed to set Python log level");
+        log.warn("[APP] Failed to set Python log level");
     }
 }

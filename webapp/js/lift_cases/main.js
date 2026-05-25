@@ -1,8 +1,8 @@
 "use strict";
 
 // Import required methods
-import { populateCraneDropdown, setupMenu, updateInputs, updateResults, showOverlay,
-    hideOverlay, enablePrintMode, disablePrintMode, setupYamlHandlers, setupUI, showVersion } from "./ui.js";
+import { populateCraneDropdown, setupMenu, updateInputs, updateResults, showLoadingOverlay, hideLoadingOverlay,
+         enablePrintMode, disablePrintMode, setupYamlHandlers, setupUI, showVersion, setLoadingText } from "./ui.js";
 import { initializePyodide, performCalcs, setPythonLogLevel } from "./api.js";
 import { initializeChart, updateChart } from "./chart.js";
 import { beginReport, addReportPage, finalizeReport } from "./pdf.js";
@@ -13,15 +13,18 @@ import * as state from "./state.js";
 let pyodide;
 
 async function initialize() {
-    showOverlay();
+    showLoadingOverlay();
 
     showVersion();
 
     // Load Pyodide - required to run python code in browser
+    setLoadingText("Initializing Python runtime ...");
     pyodide = await loadPyodide();
 
     // Initialize pyodide, and get the available crane curves
-    const craneCurves = await initializePyodide(pyodide);
+    const craneCurves = await initializePyodide(pyodide, (msg) => {
+        setLoadingText(msg);
+    });
 
     // Populate the select box with crane curves
     populateCraneDropdown(craneCurves);
@@ -31,7 +34,7 @@ async function initialize() {
     setupUI();
     registerEventListeners();
 
-    hideOverlay();
+    hideLoadingOverlay();
 
     await handleCalculation();
 
