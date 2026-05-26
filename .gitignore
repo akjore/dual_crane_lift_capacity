@@ -7,3 +7,4 @@ build
 desktop.ini
 crane_curves.yaml
 *.whl
+node_modules/

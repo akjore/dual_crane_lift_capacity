@@ -1,4 +1,3 @@
-"use strict";
 import feather from "https://cdn.jsdelivr.net/npm/feather-icons/+esm";
 
 import { INPUT_FIELDS } from "./config.js";
@@ -106,7 +105,7 @@ export function setupYamlHandlers(onYamlLoaded) {
     // File chosen via picker
     fileInput.addEventListener('change', async () => {
         const file = fileInput.files[0];
-        if (!file) return;
+        if (!file) { return };
 
         await handleYamlFile(file);
         await onYamlLoaded();
@@ -129,7 +128,7 @@ export function setupYamlHandlers(onYamlLoaded) {
         dropZone.classList.remove('drag-over');
 
         const file = e.dataTransfer.files[0];
-        if (!file) return;
+        if (!file) { return };
 
         await handleYamlFile(file);
         await onYamlLoaded();   // ✅ now valid
@@ -152,7 +151,7 @@ function updateField(id, data) {
     // Update GUI
     const el = document.getElementById(id);
 
-    if (!el) return;
+    if (!el) { return };
 
     if (!data || typeof data.value !== "number") {
         // clear input field
@@ -318,7 +317,7 @@ function buildYaml(cases) {
         if (c.cog_envelope?.value) {
             const [min, max] = c.cog_envelope.value;
 
-            if (min != null && max != null) {
+            if (min !== null && max !== null) {
                 lines.push(
                     `    cog_envelope: [${min} ${c.cog_envelope.unit}, ${max} ${c.cog_envelope.unit}]`
                 );
@@ -331,29 +330,21 @@ function buildYaml(cases) {
 
 //      Helper functions
 function addQuantity(lines, name, q) {
-    if (!q) return;
+    if (!q) { return };
     lines.push(`    ${name}: ${q.value} ${q.unit}`);
 }
 
 function addQuantityOptional(lines, name, q) {
-    if (!q || q.value == null) return;
+    if (!q || q.value === null) { return };
     lines.push(`    ${name}: ${q.value} ${q.unit}`);
 }
 
 function addScalar(lines, name, q) {
-    if (!q) return;
+    if (!q) { return };
     lines.push(`    ${name}: ${q.value}`);
 }
 
 // --------------- Misc helper functions ---------------
-//export function showOverlay() {
-//    document.getElementById("overlay").style.visibility = "visible";
-//}
-
-//export function hideOverlay() {
-//    document.getElementById("overlay").style.visibility = "hidden";
-//}
-
 export function enablePrintMode() {
     document.body.classList.add("print-mode");
 }
@@ -365,12 +356,12 @@ export function disablePrintMode() {
 // --------------- Loading overlay ---------------
 export function setLoadingText(text) {
     const el = document.getElementById("loadingText");
-    if (el) el.textContent = text;
+    if (el) { el.textContent = text };
 }
 
 export function showLoadingOverlay() {
     const el = document.getElementById("loadingOverlay");
-    if (!el) return;
+    if (!el) { return };
 
     requestAnimationFrame(() => {
         el.classList.add("active");
@@ -379,7 +370,7 @@ export function showLoadingOverlay() {
 
 export function hideLoadingOverlay() {
     const el = document.getElementById("loadingOverlay");
-    if (!el) return;
+    if (!el) { return };
 
     el.classList.remove("active");
 

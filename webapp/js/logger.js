@@ -27,7 +27,7 @@ function getCaller() {
         if (
             line.indexOf("getCaller") !== -1 ||
             line.indexOf("logger.js") !== -1
-        ) continue;
+        ) { continue };
 
         // Extract just "file.js:line"
         const match = line.match(/([^\/]+\.\w+:\d+):\d+/);

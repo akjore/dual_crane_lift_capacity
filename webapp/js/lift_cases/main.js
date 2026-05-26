@@ -1,6 +1,5 @@
-"use strict";
-
 // Import required methods
+/* global loadPyodide */ //Workaround for pyodide until imported here
 import { populateCraneDropdown, setupMenu, updateInputs, updateResults, showLoadingOverlay, hideLoadingOverlay,
          enablePrintMode, disablePrintMode, setupYamlHandlers, setupUI, showVersion, setLoadingText } from "./ui.js";
 import { initializePyodide, performCalcs, setPythonLogLevel } from "./api.js";
@@ -75,7 +74,7 @@ function updateStateFromEvent(evnt) {
     }
 
     const data = state.liftcasesJson?.[state.caseIdx];
-    if (!data) return;
+    if (!data) { return };
 
     // generic value fields
     if (VALUE_FIELDS.includes(id)) {

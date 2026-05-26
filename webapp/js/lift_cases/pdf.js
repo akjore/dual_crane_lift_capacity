@@ -1,12 +1,9 @@
-"use strict";
-
 // Report generation in pdf
 import { jsPDF } from "https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.es.min.js/+esm";
 import html2canvas from "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js/+esm";
 import { disableChartAnimation, enableChartAnimation } from "./chart.js";
 import { VERSION } from "../version.js";
 import { log } from "../logger.js";
-import * as state from "./state.js";
 
 let pdf;
 let currentPage;
@@ -18,6 +15,7 @@ let usableHeight;
 
 // Initialize report
 export function beginReport() {
+    log.info("Preparing pdf report.");
     margin = 10;
     pageWidth = 297;
     pageHeight = 210;
@@ -65,6 +63,7 @@ export function finalizeReport() {
 
     // restore chart transitions
     enableChartAnimation();
+    log.info("Report prepared.");
 }
 
 // Print pdf report page

@@ -1,4 +1,3 @@
-"use strict";
 // I can't get annotationPlugin to work with setup below. For now kept global import in html file.
 //import { Chart as ChartJS, registerables } from "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/+esm";
 //import ChartDataLabels from "https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/+esm";
@@ -104,7 +103,7 @@ export function initializeChart() {
             datalabels: {
                 anchor: "center",
                 align: "bottom",
-                formatter: (val) => {
+                formatter: () => {
                     return "CoG";
                 }
             }
@@ -258,8 +257,6 @@ export function initializeChart() {
 
     // Capture the default duration for animations (will be zero'ed when exporting reports)
     defaultDuration = chart.options.animation?.duration ?? 1000;
-
-//    return chart;
 };
 
 function buildChartData(caseData, resultData) {
@@ -305,7 +302,7 @@ function updateAnnotation(annotation, p1, p2, dimx, dimy) {
     // Update an annotation.
     // 3 components involved - one dim line, and two projection lines
     // dimx, dimy: if dimx provided, then the dim line is vertical, else horizontal
-    const visible = p1.x != null && p1.y != null && p2.x != null && p2.y != null;
+    const visible = p1.x !== null && p1.y !== null && p2.x !== null && p2.y !== null;
 
     if(dimx) {
         updateAnnotationComponent(annotation+"_1", p1.x, dimx, p1.y, p1.y, visible);
@@ -328,7 +325,7 @@ function updateAnnotationComponent(annotation, xmin, xmax, ymin, ymax, visible=t
 
     annotations[annotation].display = visible;
 
-    if(!visible) return;
+    if(!visible) { return };
 
     annotations[annotation].xMin = xmin;
     annotations[annotation].xMax = xmax;
@@ -337,7 +334,7 @@ function updateAnnotationComponent(annotation, xmin, xmax, ymin, ymax, visible=t
 
     if(label) {
         let labelval = null;
-        if(xmin != xmax) {
+        if(xmin !== xmax) {
             labelval = Math.abs(xmax - xmin).toFixed(3);
         } else {
             labelval = (ymax - ymin).toFixed(0);
@@ -367,9 +364,6 @@ export function updateChart() {
     // Update chart title
     chart.options.plugins.title.text = caseData.case + " - " + caseData.crane_curve_a;
 
-    // Update annotations - projection lines and dimension lines
-    const annotations = chart.options.plugins.annotation.annotations;
-
     const xmin = chartData.crane_capacity_curve_pt1[0].x;
     const xmax = chartData.crane_capacity_curve_pt2.slice(-1)[0].x;
     const ymin = Math.min(chartData.crane_capacity_curve_pt1[0].y, chartData.crane_capacity_curve_pt2.slice(-1)[0].y);
@@ -383,7 +377,6 @@ export function updateChart() {
     updateAnnotation("weight_margin", chartData.cog_limit_at_given_weight[1], chartData.lift_capacity_at_cog_and_env[0], x2, null);
 
     //      Update dim lines - weight margin at CoG env
-//    updateAnnotation("weight_margin_env", chartData.cog_limit_at_given_weight[0], chartData.lift_capacity_at_cog[1], x1, null);
     updateAnnotation("weight_margin_env", chartData.cog_limit_at_given_weight[0], chartData.lift_capacity_at_cog_and_env[1], x1, null);
 
     //      Update dim lines - CoG limits at current weight
@@ -398,13 +391,13 @@ export function updateChart() {
 };
 
 export function disableChartAnimation() {
-    if (!chart) return;
+    if (!chart) { return };
 
     chart.options.animation.duration = 0;
 }
 
 export function enableChartAnimation() {
-    if (!chart) return;
+    if (!chart) { return };
 
     chart.options.animation.duration = defaultDuration;
 }

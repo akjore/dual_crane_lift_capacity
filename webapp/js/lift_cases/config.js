@@ -1,5 +1,3 @@
-"use strict";
-
 export const VALUE_FIELDS = [
     "crane_radius_a",
     "crane_radius_b",

@@ -1,5 +1,3 @@
-"use strict";
-
 import { log } from "../logger.js";
 
 // variables
@@ -26,8 +24,7 @@ cases:
     float_a: 3.030 m
     # cog: 61.646 m
     cog: 62.750 m
-    # cog_envelope: [(61.668-0.5) m, (61.668+0.5) m]
-    cog_envelope: [(62.750-1.500) m, (62.750+1.500) m]
+    cog_envelope: [(62.750-2.000) m, (62.750+1.500) m]
 `;
 
 export function setCaseIdx(i) {
