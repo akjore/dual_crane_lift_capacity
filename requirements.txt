@@ -6,6 +6,8 @@ pytest-html>=3.2.0
 python-dotenv>=0.21.1
 simplejson
 pytest-dotenv
+pre-commit
+ruff
 
 
 

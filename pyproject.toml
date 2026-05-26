@@ -13,14 +13,12 @@ dirty_template = "{tag}"
 count_commits_from_version_file = false
 
 [tool.ruff]
-lint.select = ["ALL"]
+lint.select = ["E", "F", "I", "B", "UP", "SIM", "ERA", "ANN", "D", "G", "PLR"]
 lint.ignore = ["D203", "D213", "G004", "PLR2004", "PLR0913"]
 line-length = 120
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = [  # /* ensures it works for all subdirectories
-    "INP001",  # "implicit namespace package" is invalid for pytest
-]
+"tests/*" = ["INP001", "ANN"]
 
 [tool.pytest.ini_options]
 pythonpath = [
