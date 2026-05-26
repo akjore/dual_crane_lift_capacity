@@ -1,1 +1,1 @@
-export const VERSION = '2026.5.25.post7';
+export const VERSION = '2026.5.25.post8';
