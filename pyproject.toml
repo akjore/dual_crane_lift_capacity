@@ -1,5 +1,5 @@
 [build-system]
-requires = [ "setuptools>=41", "wheel", "setuptools-git-versioning", ]
+requires = [ "setuptools>=61", "wheel", "setuptools-git-versioning", ]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.package-data]

@@ -101,7 +101,7 @@ class DualCraneLiftCapacity:
 
         # Create an overall x-axis to use as basis for the crane capacity curve
         self.lift_capacity_curve_x = self.__create_x(cogs, self.cog_limits_at_given_weight,
-            cg_max_lift_capacity, 0.5 * ureg.meters)
+            cg_max_lift_capacity, lift_cases.lift_point_a_wfloat, lift_cases.lift_point_b_wfloat, 0.5 * ureg.meters)
 
         # determine the combined crane capacity (lift capacity) for each of the cg's in x
         self.lift_capacity_curve_y = self.__lift_capacity(self.lift_capacity_curve_x, cg_max_lift_capacity,
@@ -158,9 +158,10 @@ class DualCraneLiftCapacity:
         return hook_load_a, hook_load_b
 
 
-    @ureg.wraps("=A", (None, "=A", "=A", "=A", "=A"))
-    def __create_x(self, cog: pint.Quantity, cog_lim: pint.Quantity, cg_max_lift_capacity: pint.Quantity, dx_spacer:
-                   pint.Quantity) -> pint.Quantity:
+    @ureg.wraps("=A", (None, "=A", "=A", "=A", "=A", "=A", "=A"))
+    def __create_x(self, cog: pint.Quantity, cog_lim: pint.Quantity, cg_max_lift_capacity: pint.Quantity,
+                   lift_point_a_wfloat: pint.Quantity, lift_point_b_wfloat: pint. Quantity,
+                   dx_spacer: pint.Quantity) -> pint.Quantity:
         """Create a sensible x-axis to use as basis for the crane capacity curve.
 
         * The peak should be in the middle
@@ -182,8 +183,11 @@ class DualCraneLiftCapacity:
         dxmax = np.fmax(xmax_1, xmax_2) - np.nanmax(cg_max_lift_capacity, axis=1)
         dx = np.fmax(dxmin, dxmax) + dx_spacer
 
-        xmin = np.nanmin(cg_max_lift_capacity, axis=1) - dx
-        xmax = np.nanmax(cg_max_lift_capacity, axis=1) + dx
+        lp_min = np.minimum(lift_point_a_wfloat, lift_point_b_wfloat).min(axis=1)
+        lp_max = np.maximum(lift_point_a_wfloat, lift_point_b_wfloat).max(axis=1)
+
+        xmin = np.maximum(np.nanmin(cg_max_lift_capacity, axis=1) - dx, lp_min)
+        xmax = np.minimum(np.nanmax(cg_max_lift_capacity, axis=1) + dx, lp_max)
 
         x_1 = np.array(
                 [np.linspace(i, j, 7) for i, j in zip(xmin, np.nanmin(cg_max_lift_capacity, axis=1), strict=True)],
@@ -195,7 +199,7 @@ class DualCraneLiftCapacity:
         logger.debug(f"x: {x}")
         return x
 
-
+    @ureg.wraps("=B", (None, "=A", "=A", "=B", "=B", "=B", "=B", "=A", "=A"))
     def __lift_capacity(self, x: pint.Quantity, cg_max_lift_capacity: pint.Quantity, crane_capacity_a: pint.Quantity,
                         crane_capacity_b: pint.Quantity, rigging_weight_a: pint.Quantity,
                         rigging_weight_b: pint.Quantity, lift_point_a: pint.Quantity, lift_point_b: pint.Quantity,
@@ -220,29 +224,30 @@ class DualCraneLiftCapacity:
 
         :returns the lift capacity associated with x
         """
-        # Mask x's within float area
-        xp = ureg.Quantity(np.ma.masked_where((x >= cg_max_lift_capacity.min(axis=1, keepdims=True)) & \
-                                          (x <= cg_max_lift_capacity.max(axis=1, keepdims=True)), x.magnitude), x.units)
-
         # Outside peak area, lp_A and lp_B will be at extremes of allowed float-range
-        lp_a = lift_point_a.max(axis=1, keepdims=True) * (xp > cg_max_lift_capacity.max(axis=1, keepdims=True))
-        lp_a = lift_point_a.min(axis=1, keepdims=True) * (xp < cg_max_lift_capacity.min(axis=1, keepdims=True)) + lp_a
-        lp_b = lift_point_b.max(axis=1, keepdims=True) * (xp > cg_max_lift_capacity.max(axis=1, keepdims=True))
-        lp_b = lift_point_b.min(axis=1, keepdims=True) * (xp < cg_max_lift_capacity.min(axis=1, keepdims=True)) + lp_b
+        lp_a = lift_point_a.max(axis=1, keepdims=True) * (x > cg_max_lift_capacity.max(axis=1, keepdims=True))
+        lp_a = lift_point_a.min(axis=1, keepdims=True) * (x < cg_max_lift_capacity.min(axis=1, keepdims=True)) + lp_a
+        lp_b = lift_point_b.max(axis=1, keepdims=True) * (x > cg_max_lift_capacity.max(axis=1, keepdims=True))
+        lp_b = lift_point_b.min(axis=1, keepdims=True) * (x < cg_max_lift_capacity.min(axis=1, keepdims=True)) + lp_b
 
         # Compute the crane capacity
-        m_a = (crane_capacity_a - rigging_weight_a)[:, None] * (lp_b - lp_a) / (lp_b - xp)
-        m_b = (crane_capacity_b - rigging_weight_b)[:, None] * (lp_b - lp_a) / (xp - lp_a)
+        m_a = (crane_capacity_a - rigging_weight_a)[:, None] * (lp_b - lp_a) / (lp_b - x)
+        m_b = (crane_capacity_b - rigging_weight_b)[:, None] * (lp_b - lp_a) / (x - lp_a)
 
         m = np.minimum(m_a, m_b)
+
+        # Mask x's within float area
+        m_masked = np.ma.masked_where((x >= cg_max_lift_capacity.min(axis=1, keepdims=True)) & \
+                                          (x <= cg_max_lift_capacity.max(axis=1, keepdims=True)), m)
 
         # replace masked values (area within float, but not nan's) with capacity
         max_crane_cap = (crane_capacity_a + crane_capacity_b - rigging_weight_a - rigging_weight_b)[:, None] * \
             np.ones(m.shape)
-        m[np.ma.getmask(m) & ~np.isnan(x)] = max_crane_cap[np.ma.getmask(m) & ~np.isnan(x)]
-        m[np.isnan(x)] = np.nan
-        logger.debug(f"Lift capacity, m: {m}")
-        return m
+
+        m_masked[np.ma.getmask(m_masked) & ~np.isnan(x)] = max_crane_cap[np.ma.getmask(m_masked) & ~np.isnan(x)]
+        m_masked[np.isnan(x)] = np.nan
+
+        return m_masked
 
 
     def __cog_limits(self, lift_factors: float, weight: pint.Quantity, crane_capacity_a: pint.Quantity,
@@ -264,52 +269,42 @@ class DualCraneLiftCapacity:
 
         :returns limiting CoG coordinates for given weight
         """
-        # Hook load crane B when crane A is loaded to capacity
-        f_b_max_a = (weight * lift_factors + rigging_weight_a + rigging_weight_b - crane_capacity_a)
-        # crane B loaded to capacity. Multiply with 1 to create new object
-        f_b_max_b = crane_capacity_b * 1
+        gross_weight = weight * lift_factors + rigging_weight_a + rigging_weight_b
 
-        # Logic check that computed hook load is within capacity
+        # Load crane A either to maximum capacity, or gross weight, whichever comes first
+        f_a_max_a = np.minimum(gross_weight - rigging_weight_b, crane_capacity_a)
+
+        # Hook load crane B when crane A is loaded to maximum
+        f_b_max_a = gross_weight - f_a_max_a
+
+        # Maximum hook load crane B
+        f_b_max_b = np.minimum(gross_weight - rigging_weight_a, crane_capacity_b)
+
+        # Check if weight exceeds what can be lifted -> no intercepts -> set to np.nan
         is_not_liftable = f_b_max_a > crane_capacity_b
-
-        # set to nan where hook load exceeds crane capacity (not liftable)
         f_b_max_a[is_not_liftable] = np.nan
         f_b_max_b[is_not_liftable] = np.nan
 
-        f_b_min = f_b_max_a
-        f_b_max = f_b_max_b
-
-        # TODO(akj): the logic below does not work as intended. If one case reverses the crane order,
-        # then all are treated that way.
-        # crane A has lower coordinates vs crane B
-        # crane A has lower coordinates vs crane B
-#        if np.all(lift_point_a.min(1) < lift_point_b.min(1)):
-#            f_b_min = f_b_max_a
-#            f_b_max = f_b_max_b
-#        # else, crane B has lower coordinates vs crane A
-#        else:
-#            f_b_min = f_b_max_b
-#            f_b_max = f_b_max_a
-
-        x0 = ((f_b_min - rigging_weight_b) / weight / lift_factors) * \
+        # Number of calcs could be halved by checking if lpa > lpb or vv and combining with max or min as appropriate
+        x0 = ((f_b_max_a - rigging_weight_b) / weight / lift_factors) * \
             (np.nanmin(lift_point_b, axis=1) - np.nanmin(lift_point_a, axis=1)) + np.nanmin(lift_point_a, axis=1)
-        x1 = ((f_b_max - rigging_weight_b) / weight / lift_factors) * \
+        x1 = ((f_b_max_a - rigging_weight_b) / weight / lift_factors) * \
             (np.nanmax(lift_point_b, axis=1) - np.nanmax(lift_point_a, axis=1)) + np.nanmax(lift_point_a, axis=1)
-        x = np.stack((x0, x1), axis=1)
+        x2 = ((f_b_max_b - rigging_weight_b) / weight / lift_factors) * \
+            (np.nanmin(lift_point_b, axis=1) - np.nanmin(lift_point_a, axis=1)) + np.nanmin(lift_point_a, axis=1)
+        x3 = ((f_b_max_b - rigging_weight_b) / weight / lift_factors) * \
+            (np.nanmax(lift_point_b, axis=1) - np.nanmax(lift_point_a, axis=1)) + np.nanmax(lift_point_a, axis=1)
+        x = np.stack((x0, x1, x2, x3), axis=1)
+
+        x0_prime = np.nanmin(x, axis=1)
+        x1_prime = np.nanmax(x, axis=1)
+
+        x_prime = np.stack((x0_prime, x1_prime), axis=1)
 
         # Overwrite non-physical solutions (CoGs outside lifting points)
-        logger.debug(f"Intermediate calculation of intercepts: {x}")
-        # TODO: the logic below does not work as intended. If one case reverses the crane order,
-        # then all are treated that way.
-        # crane A has lower coordinates vs crane B
-        if np.all(lift_point_a.min(1) < lift_point_b.min(1)):
-            non_physical = (x < lift_point_a).any() or (x > lift_point_b).any()
-        else:
-            non_physical = (x > lift_point_a).any() or (x < lift_point_b).any()
-#        x[non_physical] = np.nan
+        logger.debug(f"Calculation of intercepts: {x_prime}")
 
-        logger.debug(f"Calculation of intercepts after removing non-physical solutions: {x}")
-        return x
+        return x_prime
 
 
     @property

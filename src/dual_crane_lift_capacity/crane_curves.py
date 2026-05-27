@@ -108,4 +108,11 @@ class CraneCurves:
             logger.error(msg)
             raise KeyError(msg)
 
-        return np.interp(radius, cls.crane_radii()[curve], cls.crane_capacities()[curve], left=np.nan, right=np.nan)
+        # Check requested radius is within bounds:
+        radii = cls.crane_radii()[curve]
+        if np.logical_or(radii > radius, radii < radius).all():
+            msg = f"Requested radius of {radius} is outside crane curve range: {np.min(radii)} to {np.max(radii)}."
+            logger.error(msg)
+            raise ValueError(msg)
+
+        return np.interp(radius, radii, cls.crane_capacities()[curve], left=np.nan, right=np.nan)

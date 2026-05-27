@@ -156,6 +156,7 @@ function updateField(id, data) {
     if (!data || typeof data.value !== "number") {
         // clear input field
         el.value = "";
+        el.textContent = "";
         return;
     }
 

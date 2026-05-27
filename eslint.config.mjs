@@ -15,11 +15,6 @@ export default [
         languageOptions: {
             ecmaVersion: "latest",
             sourceType: "module",
-//            globals: {
-//                fetch: "readonly",
-//                window: "readonly",
-//                document: "readonly"
-//            }
             globals: globals.browser
         },
 
@@ -29,7 +24,7 @@ export default [
             "no-console": "off",
             "no-debugger": "warn",
 
-            "eqeqeq": "warn",
+            "eqeqeq": ["warn", "always", { "null": "ignore" }],
             "curly": "warn"
         }
     }

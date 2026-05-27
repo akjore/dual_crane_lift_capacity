@@ -4,12 +4,8 @@ from __future__ import annotations
 import dataclasses
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-from . import dual_crane_lift_capacity, dual_crane_lift_capacity_plot, lift_cases
-
-if TYPE_CHECKING:
-    import matplotlib.pyplot as plt
+from . import dual_crane_lift_capacity, lift_cases
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -21,8 +17,6 @@ class DualCraneLift:
 
     liftcases: lift_cases.LiftCases
     dual_crane_lift_capacity_results: dual_crane_lift_capacity.DualCraneLiftCapacity
-    _plots: dict[plt.Figure]
-
 
     def __init__(self, liftcases: lift_cases.LiftCases) -> None:
         """Perform one or more dual crane lift calculations and return data to the caller.
@@ -33,20 +27,6 @@ class DualCraneLift:
 
         self.liftcases = liftcases
         self.dual_crane_lift_capacity_results = dual_crane_lift_capacity.DualCraneLiftCapacity(liftcases)
-
-
-    @property
-    def plots(self) -> dict[plt.Figure]:
-        """Return plots - create them if not already done."""
-        if not self._plots:
-            self.plots = dual_crane_lift_capacity_plot.create_plots(self.liftcases,
-                self.dual_crane_lift_capacity_results)
-        return self._plots
-
-
-    @plots.setter
-    def plots(self, var: dict[plt.Figure]) -> None:
-        self._plots = var
 
 
 if __name__ == "__main__":

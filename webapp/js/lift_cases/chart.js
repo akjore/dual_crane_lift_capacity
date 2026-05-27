@@ -279,6 +279,7 @@ function buildChartData(caseData, resultData) {
         crane_capacity_curve_pt2: coords.slice(len),
         cog: [{x: cog, y: weight}],
         cog_envelope: [{x: cog_env[0], y: weight}, {x: cog_env[1], y: weight}],
+        cog_envelope_limit: {x: cog_env[idx], y: weight},
         cog_limit_at_given_weight: [{x: cog_limit_at_weight[0], y: weight}, {x: cog_limit_at_weight[1], y: weight}],
         lift_capacity_at_cog_and_env: [{x: cog, y: lift_capacity_at_cog}, {x: cog_env[idx], y: lift_capacity_at_cog_envelope[idx]}],
     };
@@ -302,7 +303,7 @@ function updateAnnotation(annotation, p1, p2, dimx, dimy) {
     // Update an annotation.
     // 3 components involved - one dim line, and two projection lines
     // dimx, dimy: if dimx provided, then the dim line is vertical, else horizontal
-    const visible = p1.x !== null && p1.y !== null && p2.x !== null && p2.y !== null;
+    const visible = p1.x != null && p1.y != null && p2.x != null && p2.y != null;
 
     if(dimx) {
         updateAnnotationComponent(annotation+"_1", p1.x, dimx, p1.y, p1.y, visible);
@@ -374,10 +375,10 @@ export function updateChart() {
     const y2 = ymax + 0.06 * (ymax - ymin);
 
     //      Update dim lines - weight margin at CoG
-    updateAnnotation("weight_margin", chartData.cog_limit_at_given_weight[1], chartData.lift_capacity_at_cog_and_env[0], x2, null);
+    updateAnnotation("weight_margin", chartData.cog[0], chartData.lift_capacity_at_cog_and_env[0], x2, null);
 
     //      Update dim lines - weight margin at CoG env
-    updateAnnotation("weight_margin_env", chartData.cog_limit_at_given_weight[0], chartData.lift_capacity_at_cog_and_env[1], x1, null);
+    updateAnnotation("weight_margin_env", chartData.cog_envelope_limit, chartData.lift_capacity_at_cog_and_env[1], x1, null);
 
     //      Update dim lines - CoG limits at current weight
     updateAnnotation("cog_limit1", chartData.cog_limit_at_given_weight[0], chartData.cog[0], null, y1);
