@@ -1,6 +1,6 @@
 import feather from "https://cdn.jsdelivr.net/npm/feather-icons/+esm";
 
-import { INPUT_FIELDS } from "./config.js";
+import { INPUT_FIELDS, RESULT_FIELDS, COMPUTED_FIELDS } from "./config.js";
 import { VERSION } from "../version.js";
 import { log } from "../logger.js";
 import * as state from "./state.js";
@@ -204,46 +204,24 @@ export function updateInputs() {
     select.value = data.crane_curve_a;
 }
 
-export function updateResults() {
-    // This lists the html fields to be updated. Requires that the
-    // JSON object with the results uses the same field names.
-    const resultFields = [
-        "spare_capacity_a",
-        "spare_capacity_b",
-        "factored_lift_weight",
-        "weight_margin",
-        "combined_rigging_weight",
-        "true_hookload_a_with_cog_offset_towards_a",
-        "true_hookload_a_with_cog_offset_towards_b",
-        "true_hookload_b_with_cog_offset_towards_a",
-        "true_hookload_b_with_cog_offset_towards_b",
-        "factored_hookload_a_with_cog_offset_towards_a",
-        "factored_hookload_a_with_cog_offset_towards_b",
-        "factored_hookload_b_with_cog_offset_towards_a",
-        "factored_hookload_b_with_cog_offset_towards_b",
-        "combined_true_hookload_cog_offset_towards_a",
-        "combined_true_hookload_cog_offset_towards_b",
-        "combined_factored_hookload_cog_offset_towards_a",
-        "combined_factored_hookload_cog_offset_towards_b",
-        "distance_lift_point_a_to_cog",
-        "distance_lift_point_b_to_cog",
-        "distance_lift_point_a_to_cog_offset_towards_a",
-        "distance_lift_point_b_to_cog_offset_towards_a",
-        "distance_lift_point_a_to_cog_offset_towards_b",
-        "distance_lift_point_b_to_cog_offset_towards_b",
-        "distance_lift_point_a_to_lift_point_b",
-    ];
+export function updateComputedFields() {
+    // This lists the computed html fields to be updated. Requires that the
+    // JSON object with the lift cases uses the same field names.
+    const data = state.liftcasesJson[state.caseIdx];
 
-    const data = state.resultsJson[state.caseIdx];
-
-    resultFields.forEach(f => updateField(f, data[f]));
+    COMPUTED_FIELDS.forEach(f => updateField(f, data[f]));
 
     // Handle special cases
     updateField("distance_coga_ab", data.distance_lift_point_a_to_lift_point_b);
     updateField("distance_cogb_ab", data.distance_lift_point_a_to_lift_point_b);
+}
 
-    updateField("crane_capacity_a", state.liftcasesJson[state.caseIdx].crane_capacity_a);
-    updateField("crane_capacity_b", state.liftcasesJson[state.caseIdx].crane_capacity_b);
+export function updateResults() {
+    // This lists the html fields to be updated. Requires that the
+    // JSON object with the results uses the same field names.
+    const data = state.resultsJson[state.caseIdx];
+
+    RESULT_FIELDS.forEach(f => updateField(f, data[f]));
 
     // Set module weight margin background colour according to value (positive, negative)
     let elmn = document.getElementById("weight_margin");

@@ -1,3 +1,17 @@
+export const COMPUTED_FIELDS = [
+    "crane_capacity_a",
+    "crane_capacity_b",
+    "factored_lift_weight",
+    "combined_rigging_weight",
+    "distance_lift_point_a_to_cog",
+    "distance_lift_point_b_to_cog",
+    "distance_lift_point_a_to_cog_offset_towards_a",
+    "distance_lift_point_b_to_cog_offset_towards_a",
+    "distance_lift_point_a_to_cog_offset_towards_b",
+    "distance_lift_point_b_to_cog_offset_towards_b",
+    "distance_lift_point_a_to_lift_point_b",
+];
+
 export const VALUE_FIELDS = [
     "crane_radius_a",
     "crane_radius_b",
@@ -16,6 +30,24 @@ export const VALUE_FIELDS = [
 ];
 
 export const INPUT_FIELDS = [...VALUE_FIELDS, "cog"];
+
+export const RESULT_FIELDS = [
+    "spare_capacity_a",
+    "spare_capacity_b",
+    "weight_margin",
+    "true_hookload_a_with_cog_offset_towards_a",
+    "true_hookload_a_with_cog_offset_towards_b",
+    "true_hookload_b_with_cog_offset_towards_a",
+    "true_hookload_b_with_cog_offset_towards_b",
+    "factored_hookload_a_with_cog_offset_towards_a",
+    "factored_hookload_a_with_cog_offset_towards_b",
+    "factored_hookload_b_with_cog_offset_towards_a",
+    "factored_hookload_b_with_cog_offset_towards_b",
+    "combined_true_hookload_cog_offset_towards_a",
+    "combined_true_hookload_cog_offset_towards_b",
+    "combined_factored_hookload_cog_offset_towards_a",
+    "combined_factored_hookload_cog_offset_towards_b",
+];
 
 export const DATASET_MAP = [
     "crane_capacity_curve_pt1",

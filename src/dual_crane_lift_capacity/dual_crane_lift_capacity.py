@@ -488,9 +488,29 @@ class DualCraneLiftCapacity:
             {name: getattr(self, name) for name, attr in self.__class__.__dict__.items() if isinstance(attr, property)}
         del v["_lift_cases"]
 
+        # Create a result set for each case
         results = [
             dict(
-                zip(v.keys(), (cnv_quantity(v) for v in val), strict=True),
-            ) for val in zip(*v.values(), strict=True)]
+                zip(v.keys(), (v for v in val), strict=True),
+            ) for val in zip(*v.values(), strict=True)
+        ]
+
+        # Normalize units
+        results = self._normalize(results)
+
+        # Serialize units
+        results = [{key: cnv_quantity(val) for (key, val) in res.items()} for res in results]
 
         return simplejson.dumps(results, ignore_nan=True)
+
+    def _normalize(self, v: list) -> list:
+        """Convert results to use input unit."""
+        # Anything with dimension length converted to same unit as CoG
+        # Anything with dimension mass converted to same unit as weight
+        v = [{
+                key: val.to(case.cog.units if val.dimensionality == "[length]" else case.weight.units)
+                for key, val in res.items()
+            } for (res, case) in zip(v, self._lift_cases.liftcases)
+        ]
+
+        return v

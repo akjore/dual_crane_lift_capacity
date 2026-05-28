@@ -236,7 +236,7 @@ export function initializeChart() {
             	y: {
 					title: {
 						display: true,
-						text: "Weight [t]"
+						text: ""
 					},
                     grid: {
                         color: gridColour
@@ -245,7 +245,7 @@ export function initializeChart() {
             	x: {
 					title: {
 						display: true,
-						text: "Centre of Gravity [m]"
+						text: ""
 					},
                     grid: {
                         color: gridColour
@@ -364,6 +364,10 @@ export function updateChart() {
 
     // Update chart title
     chart.options.plugins.title.text = caseData.case + " - " + caseData.crane_curve_a;
+
+    // Update axes titles
+    chart.options.scales.x.title.text = "Centre of Gravity [" + caseData.cog.unit + "]";
+    chart.options.scales.y.title.text = "Weight [" + caseData.weight.unit + "]";
 
     const xmin = chartData.crane_capacity_curve_pt1[0].x;
     const xmax = chartData.crane_capacity_curve_pt2.slice(-1)[0].x;

@@ -1,7 +1,8 @@
 // Import required methods
 /* global loadPyodide */ //Workaround for pyodide until imported here
 import { populateCraneDropdown, setupMenu, updateInputs, updateResults, showLoadingOverlay, hideLoadingOverlay,
-         enablePrintMode, disablePrintMode, setupYamlHandlers, setupUI, showVersion, setLoadingText } from "./ui.js";
+         enablePrintMode, disablePrintMode, setupYamlHandlers, setupUI, showVersion, setLoadingText,
+         updateComputedFields } from "./ui.js";
 import { initializePyodide, performCalcs, setPythonLogLevel } from "./api.js";
 import { initializeChart, updateChart } from "./chart.js";
 import { beginReport, addReportPage, finalizeReport } from "./pdf.js";
@@ -113,6 +114,7 @@ function updateGUI(evnt) {
     if (!evnt) {
         updateInputs();
     }
+    updateComputedFields();
     updateResults();
     updateChart();
 }

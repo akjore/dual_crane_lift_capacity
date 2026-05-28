@@ -136,7 +136,41 @@ class LiftCase:
         v["crane_curve_a"] = self.crane_curve_a
         v["crane_curve_b"] = self.crane_curve_b
 
+        v = self._normalize(v)
         return dict(zip(v.keys(), (cnv_quantity(li) for li in v.values()), strict=True))
+
+
+    def _normalize(self, v: dict) -> dict:
+        """Convert "b" units to match "a" units. Also convert any derived properties to match "a" units."""
+        keys_to_normalize = [
+            ("crane_radius_a", "crane_radius_b"),
+            ("rigging_weight_a", "rigging_weight_b"),
+            ("rigging_weight_a", "combined_rigging_weight"),
+            ("lift_point_a", "lift_point_b"),
+            ("float_a", "float_b"),
+            ("weight", "crane_capacity_a"),
+            ("weight", "crane_capacity_b"),
+            ("lift_point_a_wfloat", "lift_point_b_wfloat"),
+            ("cog", "cog_envelope"),
+            ("cog", "cog_offset_a"),
+            ("cog", "cog_offset_b"),
+            ("cog", "distance_lift_point_a_to_cog"),
+            ("cog", "distance_lift_point_b_to_cog"),
+            ("cog", "distance_lift_point_a_to_cog"),
+            ("cog", "distance_lift_point_a_to_lift_point_b"),
+            ("cog", "distance_lift_point_a_to_cog_offset_towards_a"),
+            ("cog", "distance_lift_point_a_to_cog_offset_towards_b"),
+            ("cog", "distance_lift_point_b_to_cog_offset_towards_a"),
+            ("cog", "distance_lift_point_b_to_cog_offset_towards_b"),
+        ]
+
+        for key_a, key_b in keys_to_normalize:
+            v[key_b] = v[key_b].to(v[key_a].units)
+        return v
+
+    def _normalize_pair(self, a: pint.Quantity, b: pint.Quantity) -> pint.Quantity:
+        """Return (a, b) where b is converted to the unit of a."""
+        return a, b.to(a.units)
 
 
     @property
@@ -269,6 +303,12 @@ class LiftCase:
     @ureg.check("[]", "[mass]")
     def weight(self, value: pint.Quantity) -> None:
         self._weight = value
+
+
+    @property
+    def factored_lift_weight(self) -> pint.Quantity:
+        """Return the weight of the lifted object."""
+        return self._weight * self.cog_uncertainty_factor * self.weight_uncertainty_factor * self.tilt_factor
 
 
     @property

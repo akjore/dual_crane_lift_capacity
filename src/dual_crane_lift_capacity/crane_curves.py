@@ -110,7 +110,10 @@ class CraneCurves:
 
         # Check requested radius is within bounds:
         radii = cls.crane_radii()[curve]
-        if np.logical_or(radii > radius, radii < radius).all():
+        r_min = np.min(radii)
+        r_max = np.max(radii)
+
+        if not (r_min < radius < r_max):
             msg = f"Requested radius of {radius} is outside crane curve range: {np.min(radii)} to {np.max(radii)}."
             logger.error(msg)
             raise ValueError(msg)
