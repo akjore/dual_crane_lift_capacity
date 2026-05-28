@@ -510,7 +510,7 @@ class DualCraneLiftCapacity:
         v = [{
                 key: val.to(case.cog.units if val.dimensionality == "[length]" else case.weight.units)
                 for key, val in res.items()
-            } for (res, case) in zip(v, self._lift_cases.liftcases)
+            } for (res, case) in zip(v, self._lift_cases.liftcases, strict=True)
         ]
 
         return v
