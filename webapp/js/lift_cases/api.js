@@ -122,7 +122,16 @@ export async function performCalcs(pyodide, evnt) {
 };
 
 function getWheelUrl() {
-    return `wheels/dual_crane_lift_capacity-${VERSION}-py3-none-any.whl`;
+    const baseUrl = `wheels/dual_crane_lift_capacity-${VERSION}-py3-none-any.whl`;
+
+    const isDev = ["localhost", "127.0.0.1"].includes(location.hostname);
+
+    const url = isDev
+        ? baseUrl+`?v=${Date.now()}`
+        : baseUrl;
+
+    log.debug(isDev ? "DEV wheel:" : "PROD wheel:", url);
+    return url;
 }
 
 async function getCraneCurves() {

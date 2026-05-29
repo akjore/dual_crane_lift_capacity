@@ -50,7 +50,6 @@ jobs:
 # 2. TEST (matrix)
 # --------------------------------------------------
   test:
-    needs: lint
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

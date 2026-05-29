@@ -79,11 +79,12 @@ class LiftCase:
             return Q.from_list([Q(p) if p else np.nan*default_unit for p in param])
         if isinstance(param, dict):
             # json may pass back None - these need to be converted to np.nan to work with Quantities
-            if isinstance(param["value"], list):
-                param["value"] = [v if v else np.nan for v in param["value"]]
+            val = param["value"]
+            if isinstance(val, list):
+                val = [v if v else np.nan for v in val]
 
             # Assume a dict with a value (could be null) and unit as keys (json)
-            return (param["value"]) * (Q(param["unit"]) if param["unit"] else Q("dimensionless"))
+            return (val) * (Q(param["unit"]) if param["unit"] else Q("dimensionless"))
 
         return Q(param) if param else param
 
