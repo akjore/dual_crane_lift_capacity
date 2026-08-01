@@ -1,0 +1,78 @@
+%YAML 1.2
+---
+# Syntax (sample) is provided below.
+#
+# case: Any string describing the case.
+# crane_curve_a: Any valid crane curve
+# crane_curve_b: Any valid crane curve. Will usually be the same as for crane a, but is not required to be.
+# crane_radius_a: Any radius within the extremes of the crane curve
+# crane_radius_b: As for crane_radius_a
+# rigging_weight_a: The weight of the rigging associated with crane hook a
+# rigging_weight_b: As for rigging_weight_a
+# weight_uncertainty_factor: The weight uncertainty factor
+# cog_uncertainty_factor: The cog uncertainty factor
+# tilt_factor: The tilt factor
+# lift_point_a: Position of lifting point a
+# lift_point_b: Position of lifting point b
+# float_a: Optional. The distance the lifting point can move relative to lifting point a, in either direction
+# float_b: Optional. The distance the lifting point can move relative to lifting point b, in either direction
+# weight: The mass of the lifted object. The report will use this unit for mass.
+# cog: The position of the centre of gravity
+# cog_envelope: Optional. Two values, giving the start and end positions of the CoG envelope
+
+# A reference case may be identified by an &-tag (yaml anchor tag)
+cases:
+  - &base_case
+    case: Sample 1
+    crane_curve_a: S7000.main.fixed_1.5
+    crane_curve_b: S7000.main.fixed_1.5
+    crane_radius_a: 50.0 m
+    crane_radius_b: 50.0 m
+    rigging_weight_a: 495 t
+    rigging_weight_b: 380 t
+    weight_uncertainty_factor: 1.03
+    cog_uncertainty_factor: 1.02
+    tilt_factor: 1.02
+    lift_point_a: 43.73 m
+    lift_point_b: 82.0 m
+    weight: 10295 t
+    cog: 61.668 m
+#    cog_envelope: [61.0 m, 62.0 m]
+
+  # A reference case may be re-used, and selected parameters overwritten (yaml alias tag)
+  - <<: *base_case
+    case: Sample 2
+    crane_curve_a: Thialf.main
+    crane_curve_b: Thialf.main
+
+  # Specify float if relevant: lifting point is then within a range of 43.73m +/- 3.03m
+  - <<: *base_case
+    case: Sample 3
+    lift_point_a: 43.73 m
+    float_a: 3.03 m
+    #cog_envelope:
+
+  # Units given for weight and CoG determine the units used on the plots
+  - <<: *base_case
+    case: Sample 4
+    #weight: 226965.89892 slugs
+    weight: 705431.7 slugs
+
+  # Which crane is A and which is B is not important
+  - <<: *base_case
+    case: Sample 5
+    lift_point_a: 82.0 m
+    lift_point_b: 43.73 m
+    rigging_weight_a: 380 t
+    rigging_weight_b: 495 t
+
+  # If CoG envelope is known, specify end points - simple arithmetic supported
+  - <<: *base_case
+    case: Sample 6
+    cog_envelope: [(61.668-1.5) m, (61.668+1.5) m]
+
+  # Both CoG and CoG envelope may be provided
+  - <<: *base_case
+    case: Sample 7
+    cog: 61.668m
+    cog_envelope: [(61.668-1.5) m, (61.668+1.5) m]
